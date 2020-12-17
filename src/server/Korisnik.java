@@ -1,5 +1,6 @@
 package server;
 
+import java.util.LinkedList;
 
 public class Korisnik {
 	private String username;
@@ -8,10 +9,18 @@ public class Korisnik {
 	private String prezime;
 	private String pol;
 	private String email;
-	Status status;
-	
+	Status trenutniStatus;
+	private LinkedList<Test> testiranja = new LinkedList<>();	
 
-// ovde mi je public pravilo problem
+public LinkedList<Test> getTestiranja() {
+		return testiranja;
+	}
+
+	public void setTestiranja(LinkedList<Test> testiranja) {
+		this.testiranja = testiranja;
+	}
+
+	// ovde mi je public pravilo problem
 	public Korisnik (String username, String password, String ime, String prezime, String pol, String email) {
 		this.username = username;
 		this.password = password;
@@ -23,7 +32,7 @@ public class Korisnik {
 	
 	@Override
 	public String toString() {
-		return "ime: " + ime + "\t prezime; " + prezime +  "\t status: " + status + "\t email: " + email; 
+		return "ime: " + ime + "\t prezime; " + prezime +  "\t status: " + trenutniStatus + "\t email: " + email; 
 	}
 
 //	geteri i seteri za atribute korisnika
@@ -75,12 +84,12 @@ public class Korisnik {
 		this.email = email;
 	}
 
-	public Status getStatus() {
-		return status;
+	public Status getTrenutniStatus() {
+		return trenutniStatus;
 	}
 
-	public void setStatus(Status status) {
-		this.status = status;
+	public void setTrenutniStatus(Status status) {
+		this.trenutniStatus = status;
 	}
 	
 }

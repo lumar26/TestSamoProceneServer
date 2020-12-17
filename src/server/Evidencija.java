@@ -25,21 +25,21 @@ public class Evidencija {
 
 	public void izlistajPozitivne(PrintWriter tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.status == Status.POZITIVAN)
+			if (korisnik.getTrenutniStatus() == Status.POZITIVAN)
 				tokKaKorisniku.println(korisnik.toString());
 		}
 	}
 	
 	public void izlistajNegativne(PrintWriter tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.status == Status.NEGATIVAN)
+			if (korisnik.getTrenutniStatus() == Status.NEGATIVAN)
 				tokKaKorisniku.println(korisnik.toString());
 		}
 	}
 	
 	public void izlistajPodNadzorom(PrintWriter tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.status == Status.POD_NADZOROM)
+			if (korisnik.getTrenutniStatus() == Status.POD_NADZOROM)
 				tokKaKorisniku.println(korisnik.toString());
 		}
 	}
