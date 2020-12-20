@@ -1,14 +1,37 @@
 package server;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.LinkedList;
 
+//Singulton
 public class Evidencija {
+	
+//	private static Evidencija instance;
+//	
+//	public static Evidencija getInstance() {
+//		if (instance == null) {
+//			return new Evidencija();
+//		}
+//		return instance;
+//	}
+//	
+//	private Evidencija() {
+//	}
+	
 	private int brojTestiranih;
 	private int brojPozitivnihTestova;
 	private int brojNegativnihTestova;
 	private int brojPacijenataodNadzorom;
-	static LinkedList<Korisnik> registrovaniKorisnici = new LinkedList<Korisnik>();
+	public  LinkedList<Korisnik> registrovaniKorisnici = new LinkedList<Korisnik>();
+
+	public LinkedList<Korisnik> getRegistrovaniKorisnici() {
+		return registrovaniKorisnici;
+	}
+
+	public void setRegistrovaniKorisnici(LinkedList<Korisnik> registrovaniKorisnici) {
+		this.registrovaniKorisnici = registrovaniKorisnici;
+	}
 
 	@Override
 	public String toString() {
@@ -17,27 +40,27 @@ public class Evidencija {
 				+ "\nBroj pacijenata pod nadzorom je: " + brojPacijenataodNadzorom;
 	}
 
-	public void izlistajKorisnike(PrintWriter tokKaKorisniku) {
+	public void izlistajKorisnike(PrintStream tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
 			tokKaKorisniku.println(korisnik.toString());
 		}
 	}
 
-	public void izlistajPozitivne(PrintWriter tokKaKorisniku) {
+	public void izlistajPozitivne(PrintStream tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
 			if (korisnik.getTrenutniStatus() == Status.POZITIVAN)
 				tokKaKorisniku.println(korisnik.toString());
 		}
 	}
 	
-	public void izlistajNegativne(PrintWriter tokKaKorisniku) {
+	public void izlistajNegativne(PrintStream tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
 			if (korisnik.getTrenutniStatus() == Status.NEGATIVAN)
 				tokKaKorisniku.println(korisnik.toString());
 		}
 	}
 	
-	public void izlistajPodNadzorom(PrintWriter tokKaKorisniku) {
+	public void izlistajPodNadzorom(PrintStream tokKaKorisniku) {
 		for (Korisnik korisnik : registrovaniKorisnici) {
 			if (korisnik.getTrenutniStatus() == Status.POD_NADZOROM)
 				tokKaKorisniku.println(korisnik.toString());

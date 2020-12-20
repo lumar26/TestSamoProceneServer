@@ -11,7 +11,6 @@ public class Server {
 	static LinkedList<ClientHandler> handlers = new LinkedList<>();
 //	static LinkedList<Korisnik> registrovaniKorisnici = new LinkedList<Korisnik>();
 	static String adminPassword = "admin123";
-	static Evidencija evidencija;
 
 	
 	public static void main(String[] args) {
@@ -21,7 +20,6 @@ public class Server {
 		
 		try {
 			prijemniSoket = new ServerSocket(port);
-			evidencija = new Evidencija();
 
 			while (true) {
 				System.out.println("Server je pokrenut i ceka na zahteve za konekcijem");
@@ -30,8 +28,9 @@ public class Server {
 				System.out.println("Doslo je do konekcije sa klijentom");
 				ClientHandler clientHandler = new ClientHandler(komunikacioniSoket);
 				handlers.add(clientHandler);
-				clientHandler.start();
 				System.out.println("trenutno je aktivna " + handlers.size() + " konekcija");
+				clientHandler.start();
+				
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
