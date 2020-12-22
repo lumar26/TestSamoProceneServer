@@ -26,14 +26,14 @@ public class Util {
 		poruka.put("upozorenje.neprazanUnos", "(NE SME BITI PRAZAN UNOS)");
 		
 //		opcije ako je prijava neuspesna
-		poruka.put("prijava.neuspesanUnos",
+		poruka.put("prijava.neuspesanUnosMeni",
 				"Korisnicko ime i lozinka koje ste uneli ne pripadaju ni jednom registrovanom korisniku\n"
 						+ "Unesite redni broj vaseg izbora\n" + "1. Unos novih kredencijala\n"
 						+ "2. Povratak na glavni meni kako biste se registrovali ");
 		poruka.put("prijava.uvod",
 				"------------------------------------------------------\nMolimo vas da se prijavite na platformu za samotestiranje\n");
-		poruka.put("registracija.username", "Unesite vaše korisničko ime: \n");
-		poruka.put("registracija.password", "Unesite vašu lozinku: \n");
+		poruka.put("prijava.username", "Unesite vaše korisničko ime: \n");
+		poruka.put("prijava.password", "Unesite vašu lozinku: \n");
 		
 //		obavestenja o rezultatima testa i upozorenja za maksimalan broj testova
 		poruka.put("poruka.pozitivanBrziTest",
@@ -73,7 +73,12 @@ public class Util {
 				"Izaberite jednu od opcija unosom odgovarajuceg broja (1, 2, 3 ili 4): 1. izlistaj sve"
 						+ " korisnike; 2. izlistaj pozitivne korisnike; 3. izlistaj negativne korisnike; "
 						+ "4. izlistaj korisnike pod nadzorom.\n 5. Povratak u glavni meni");
-		poruka.put("admin.izlistavanje", "Lista svih korisnika:");
+		poruka.put("admin.izlistavanjeSvi", "Lista svih korisnika:");
+		poruka.put("admin.izlistavanjePozitivni", "Lista svih pozitivnih korisnika:");
+		poruka.put("admin.izlistavanjeNegativni", "Lista svih negativnih korisnika:");
+		poruka.put("admin.izlistavanjeNadzor", "Lista svih korisnika pod nadzorom:");
+		
+//		glavni meni na poscetku
 		poruka.put("glavniMeni",
 				"----------------------------------------------------------------------------------------\n"
 						+ "Izaberite sledecu aktivnost tako sto cete uneti odgovarajuci redni broj(primer: '2'):\n"
