@@ -1,102 +1,150 @@
 package server;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.util.LinkedList;
+import java.io.*;
+import java.lang.ref.SoftReference;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
-//Singulton
+
 public class Evidencija {
-	
-//	private static Evidencija instance;
-//	
-//	public static Evidencija getInstance() {
-//		if (instance == null) {
-//			return new Evidencija();
-//		}
-//		return instance;
-//	}
-//	
-//	private Evidencija() {
-//	}
-	
-	private int brojTestiranih;
-	private int brojPozitivnihTestova;
-	private int brojNegativnihTestova;
-	private int brojPacijenataodNadzorom;
-	public  LinkedList<Korisnik> registrovaniKorisnici = new LinkedList<Korisnik>();
+    //	Singleton pattern
+    private static Evidencija instance;
 
-	public LinkedList<Korisnik> getRegistrovaniKorisnici() {
-		return registrovaniKorisnici;
-	}
+    public static Evidencija getInstance() {
+        if (instance == null) {
+            return new Evidencija();
+        }
+        return instance;
+    }
 
-	public void setRegistrovaniKorisnici(LinkedList<Korisnik> registrovaniKorisnici) {
-		this.registrovaniKorisnici = registrovaniKorisnici;
-	}
+    private Evidencija() {
+    }
 
-	@Override
-	public String toString() {
-		return "Ukupan broj testiranih korisnika je: " + brojTestiranih + "\nBroj pozitivnih testova je jednak: "
-				+ brojPozitivnihTestova + "\nBroj negativnih testova je jednak: " + brojNegativnihTestova
-				+ "\nBroj pacijenata pod nadzorom je: " + brojPacijenataodNadzorom;
-	}
+    private File korisnici = new File("registrovaniKorisnici.txt");
+    private File testiranja = new File("testiranja.txt");
 
-	public void izlistajKorisnike(PrintStream tokKaKorisniku) {
-		for (Korisnik korisnik : registrovaniKorisnici) {
-			tokKaKorisniku.println(korisnik.toString());
-		}
-	}
+//  1. da vidimo prvo za fajl koji ima korisnike sadrzane
 
-	public void izlistajPozitivne(PrintStream tokKaKorisniku) {
-		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.getTrenutniStatus() == Status.POZITIVAN)
-				tokKaKorisniku.println(korisnik.toString());
-		}
-	}
-	
-	public void izlistajNegativne(PrintStream tokKaKorisniku) {
-		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.getTrenutniStatus() == Status.NEGATIVAN)
-				tokKaKorisniku.println(korisnik.toString());
-		}
-	}
-	
-	public void izlistajPodNadzorom(PrintStream tokKaKorisniku) {
-		for (Korisnik korisnik : registrovaniKorisnici) {
-			if (korisnik.getTrenutniStatus() == Status.POD_NADZOROM)
-				tokKaKorisniku.println(korisnik.toString());
-		}
-	}
 
-	public int getBrojTestiranih() {
-		return brojTestiranih;
-	}
+    //	prvo nam treba za upisivanje u fajl
+    public boolean postojiKorisnikUBazi(Korisnik k){
+        try  {
+            Scanner citac = new Scanner(korisnici);
+            while (citac.hasNextLine()) {
+                Korisnik rez = linijaUKorisnika(citac.nextLine());
+                if (rez.equals(k)) return true;
+            }
+        citac.close();
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+            System.err.println("[ERROR EVIDENCIJA]: Scanner klasa nije mogla da nadje fajl trazeni ");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-	public void setBrojTestiranih(int brojTestiranih) {
-		this.brojTestiranih = brojTestiranih;
-	}
+    public boolean dodajKorisnika(Korisnik k) {
+        try {
+            FileWriter upis = new FileWriter(korisnici);
+            upis.write(korisnikULiniju(k));
+            upis.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("[ERROR EVIDENCIJA]: Prilikom registracije i upisa u fajl doslo je do problema");
+            return false;
+        }
+    }
 
-	public int getBrojPozitivnihTestova() {
-		return brojPozitivnihTestova;
-	}
+    //    onda nam treba za prelistavanje fajla
+    public Korisnik nadjiKorisnikaUBazi(String username, String password) {
+        try  {
+            Scanner citac = new Scanner(korisnici);
+            while (citac.hasNextLine()) {
+                Korisnik rez = linijaUKorisnika(citac.nextLine());
+                if (rez.getUsername().equals(username) && rez.getPassword().equals(password)) return rez;
+            }
+            citac.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-	public void setBrojPozitivnihTestova(int brojPozitivnihTestova) {
-		this.brojPozitivnihTestova = brojPozitivnihTestova;
-	}
+    //    2. sad da odradimo testiranja
+    public boolean dodajTestiranje(Test t) {
+        try {
+            FileWriter upis = new FileWriter(testiranja);
+            upis.write(testULiniju(t));
+            upis.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("P[ERROR EVIDENCIJA]: rilikom upoisa novog testiranja u fajl doslo je do greske doslo je do problema");
+            return false;
+        }
+    }
 
-	public int getBrojNegativnihTestova() {
-		return brojNegativnihTestova;
-	}
 
-	public void setBrojNegativnihTestova(int brojNegativnihTestova) {
-		this.brojNegativnihTestova = brojNegativnihTestova;
-	}
+    public String izlistajTestoveTipa(Status status) {
+        String rez = "";
+        List<Test> testovi = vratiSveTestoveTipa(status);
+        for (Test t :
+                testovi) {
+            rez += testULiniju(t);
+        }
+        return rez;
+    }
+    private List<Test> vratiSveTestoveTipa(Status status) {
+        List<Test> testovi = new ArrayList<>();
 
-	public int getBrojPacijenataodNadzorom() {
-		return brojPacijenataodNadzorom;
-	}
+        try (Scanner citac = new Scanner(testiranja)) {
+            while (citac.hasNextLine()) {
+                Test t = linijuUTest(citac.nextLine());
+                if (t.getRezultatTesta().equals(status)) testovi.add(t);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("[ERROR EVIDENCIJA]: ]Greska prilikom vracanja trazenih testova iz fajla 'testiranje.txt'...");
+        }
+        return testovi;
+    }
 
-	public void setBrojPacijenataodNadzorom(int brojPacijenataodNadzorom) {
-		this.brojPacijenataodNadzorom = brojPacijenataodNadzorom;
-	}
 
+
+    private Korisnik linijaUKorisnika(String linija) {
+//		nama je linija oblika: username:luka password:1234 ime:Luka itd...
+        String[] kredencijali = linija.split(" ");
+//		imamo 6 kredeencijala, ne bi trebalo \n na kraju sto je da nam pravi problem
+        return new Korisnik(izdvojiKredencijal(kredencijali[0]), izdvojiKredencijal(kredencijali[1]), izdvojiKredencijal(kredencijali[2]), izdvojiKredencijal(kredencijali[3]), izdvojiKredencijal(kredencijali[4]), izdvojiKredencijal(kredencijali[5]));
+    }
+
+    private String korisnikULiniju(Korisnik k) {
+        return k.toString();
+    }
+
+    private String izdvojiKredencijal(String zapis) {
+//		zapis je oblika username:lumar
+        System.out.println(zapis);
+        return zapis.split(":")[1];
+    }
+
+    private String testULiniju(Test t) {
+        return t.toString();
+    }
+
+    private Test linijuUTest(String linija) throws ParseException {
+//        dobijamo liniju tipa Korisni:luka tip_test:PCR itd..., jedini je problem dal pretvara odmah string u enum
+        String[] kredencijali = linija.split(" ");
+
+//        _????????????????????????????????????????????????????????????????????
+//ovde je veoma veliko pitanje dal ce da radi 'linijaUKOrisnika()', al trebalo bi
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+        Date d = df.parse(izdvojiKredencijal(kredencijali[3]));
+        GregorianCalendar datum = new GregorianCalendar();
+        datum.setTime(d);
+        return new Test(TipTesta.valueOf(izdvojiKredencijal(kredencijali[1])), Status.valueOf(izdvojiKredencijal(kredencijali[2])), datum, linijaUKorisnika(izdvojiKredencijal(kredencijali[0])));
+    }
 }

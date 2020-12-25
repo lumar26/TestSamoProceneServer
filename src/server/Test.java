@@ -7,16 +7,18 @@ public class Test {
 	private TipTesta tip;
 	private Status rezultatTesta;
 	private GregorianCalendar datumTestiranja;
+	private Korisnik korisnik;
 	
-	public Test(TipTesta tip, Status rezultatTesta, GregorianCalendar datumTestiranja) {
+	public Test(TipTesta tip, Status rezultatTesta, GregorianCalendar datumTestiranja, Korisnik korisnik) {
 		this.tip = tip;
 		this.rezultatTesta = rezultatTesta;
 		this.datumTestiranja = datumTestiranja;
+		this.korisnik = korisnik;
 	}
 	
 	@Override
 	public String toString() {
-		return "Tip testa: " + this.tip + "\t rezultat testa: " + this.rezultatTesta + "\t datum testiranja: " + this.datumTestiranja;
+		return "Korisnik:"+ this.korisnik.getIme() + "_" + this.korisnik.getPrezime() +  "Tip_testa: " + this.tip + " rezultat_testa: " + this.rezultatTesta + " datum_testiranja: " + this.datumTestiranja;
 	}
 	
 	public TipTesta getTip() {

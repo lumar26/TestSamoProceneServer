@@ -1,5 +1,5 @@
 package server;
 
 public enum TipTesta {
-	PCR, BRZI
+	PCR, BRZI, SVI
 }
