@@ -10,6 +10,8 @@ import java.util.*;
 public class Evidencija {
     //	Singleton pattern
     private static Evidencija instance;
+    private File korisnici;
+    private File testiranja;
 
     public static Evidencija getInstance() {
         if (instance == null) {
@@ -19,23 +21,30 @@ public class Evidencija {
     }
 
     private Evidencija() {
+        korisnici = new File("registrovaniKorisnici.txt");
+        testiranja = new File("testiranja.txt");
     }
 
-    private File korisnici = new File("registrovaniKorisnici.txt");
-    private File testiranja = new File("testiranja.txt");
 
 //  1. da vidimo prvo za fajl koji ima korisnike sadrzane
 
 
     //	prvo nam treba za upisivanje u fajl
-    public boolean postojiKorisnikUBazi(Korisnik k){
-        try  {
+    public boolean postojiKorisnikUBazi(Korisnik k) {
+        if (!korisnici.exists()) return false;
+        try {
             Scanner citac = new Scanner(korisnici);
             while (citac.hasNextLine()) {
-                Korisnik rez = linijaUKorisnika(citac.nextLine());
-                if (rez.equals(k)) return true;
+                String sledecaLinija = citac.nextLine();
+                if (sledecaLinija != null && !sledecaLinija.equals("")) {
+                    System.out.println("Jedna linija procitan iz fajla" + sledecaLinija);
+                    Korisnik rez = linijaUKorisnika(sledecaLinija);
+
+                    if (rez.equals(k)) return true;
+                }
+
             }
-        citac.close();
+            citac.close();
         } catch (FileNotFoundException fnfe) {
             fnfe.printStackTrace();
             System.err.println("[ERROR EVIDENCIJA]: Scanner klasa nije mogla da nadje fajl trazeni ");
@@ -47,7 +56,7 @@ public class Evidencija {
 
     public boolean dodajKorisnika(Korisnik k) {
         try {
-            FileWriter upis = new FileWriter(korisnici);
+            FileWriter upis = new FileWriter(korisnici, true);
             upis.write(korisnikULiniju(k));
             upis.close();
             return true;
@@ -60,11 +69,27 @@ public class Evidencija {
 
     //    onda nam treba za prelistavanje fajla
     public Korisnik nadjiKorisnikaUBazi(String username, String password) {
-        try  {
+        try {
             Scanner citac = new Scanner(korisnici);
             while (citac.hasNextLine()) {
                 Korisnik rez = linijaUKorisnika(citac.nextLine());
+                System.out.println("Jedan korisnik iz fajla" + rez.toString());
                 if (rez.getUsername().equals(username) && rez.getPassword().equals(password)) return rez;
+            }
+            citac.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Korisnik nadjiKorisnikaUBazi(String username) {
+        try {
+            Scanner citac = new Scanner(korisnici);
+            while (citac.hasNextLine()) {
+                Korisnik rez = linijaUKorisnika(citac.nextLine());
+                System.out.println("Jedan korisnik iz fajla" + rez.toString());
+                if (rez.getUsername().equals(username)) return rez;
             }
             citac.close();
         } catch (Exception e) {
@@ -82,11 +107,10 @@ public class Evidencija {
             return true;
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("P[ERROR EVIDENCIJA]: rilikom upoisa novog testiranja u fajl doslo je do greske doslo je do problema");
+            System.err.println("[ERROR EVIDENCIJA]: rilikom upoisa novog testiranja u fajl doslo je do greske doslo je do problema");
             return false;
         }
     }
-
 
     public String izlistajTestoveTipa(Status status) {
         String rez = "";
@@ -97,6 +121,7 @@ public class Evidencija {
         }
         return rez;
     }
+
     private List<Test> vratiSveTestoveTipa(Status status) {
         List<Test> testovi = new ArrayList<>();
 
@@ -112,13 +137,13 @@ public class Evidencija {
         return testovi;
     }
 
-
-
     private Korisnik linijaUKorisnika(String linija) {
 //		nama je linija oblika: username:luka password:1234 ime:Luka itd...
         String[] kredencijali = linija.split(" ");
 //		imamo 6 kredeencijala, ne bi trebalo \n na kraju sto je da nam pravi problem
-        return new Korisnik(izdvojiKredencijal(kredencijali[0]), izdvojiKredencijal(kredencijali[1]), izdvojiKredencijal(kredencijali[2]), izdvojiKredencijal(kredencijali[3]), izdvojiKredencijal(kredencijali[4]), izdvojiKredencijal(kredencijali[5]));
+        Status status = Status.valueOf(izdvojiKredencijal(kredencijali[6]));
+        return new Korisnik(izdvojiKredencijal(kredencijali[0]), izdvojiKredencijal(kredencijali[1]), izdvojiKredencijal(kredencijali[2]),
+                izdvojiKredencijal(kredencijali[3]), izdvojiKredencijal(kredencijali[4]), izdvojiKredencijal(kredencijali[5]), status);
     }
 
     private String korisnikULiniju(Korisnik k) {
@@ -127,7 +152,6 @@ public class Evidencija {
 
     private String izdvojiKredencijal(String zapis) {
 //		zapis je oblika username:lumar
-        System.out.println(zapis);
         return zapis.split(":")[1];
     }
 
@@ -139,12 +163,80 @@ public class Evidencija {
 //        dobijamo liniju tipa Korisni:luka tip_test:PCR itd..., jedini je problem dal pretvara odmah string u enum
         String[] kredencijali = linija.split(" ");
 
-//        _????????????????????????????????????????????????????????????????????
 //ovde je veoma veliko pitanje dal ce da radi 'linijaUKOrisnika()', al trebalo bi
         SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
         Date d = df.parse(izdvojiKredencijal(kredencijali[3]));
         GregorianCalendar datum = new GregorianCalendar();
         datum.setTime(d);
-        return new Test(TipTesta.valueOf(izdvojiKredencijal(kredencijali[1])), Status.valueOf(izdvojiKredencijal(kredencijali[2])), datum, linijaUKorisnika(izdvojiKredencijal(kredencijali[0])));
+        return new Test(TipTesta.valueOf(izdvojiKredencijal(kredencijali[1])), Status.valueOf(izdvojiKredencijal(kredencijali[2])),
+                datum, nadjiKorisnikaUBazi(izdvojiKredencijal(kredencijali[0])));
+    }
+
+    // ovde proveravamo dal je vec testiran korisnik
+    public boolean jeVecTestiran(Korisnik k, TipTesta test) {
+        try {
+            Scanner citac = new Scanner(testiranja);
+            while (citac.hasNextLine()) {
+                String linija = citac.nextLine();
+//                if (linija == null || linija.equals("")) return false;
+                if (linijuUTest(linija).getKorisnik().equals(k) && linijuUTest(linija).getTip() == test) return true;
+            }
+            citac.close();
+        } catch (FileNotFoundException | ParseException e) {
+            System.out.println("[ERROR je vec testiran]Ili je lose parsovano ili nije nadjen fajl ");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean dodajTestiranje(Korisnik k, TipTesta tip, Status rezultat) {
+        Test t = new Test(tip, rezultat, new GregorianCalendar(), k);
+        try {
+            FileWriter upis = new FileWriter(testiranja, true);
+            upis.write(testULiniju(t));
+            upis.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("[ERROR EVIDENCIJA]: Prilikom registracije i upisa u fajl doslo je do problema");
+            return false;
+        }
+    }
+
+    public String poslednjeTestiranje(Korisnik k) {
+        Test poslednji = null;
+        try {
+            Scanner citac = new Scanner(testiranja);
+            while (citac.hasNextLine()) {
+                String linija = citac.nextLine();
+                Test trenutni = linijuUTest(linija);
+//                ovde bi trebalo da ova metoda vraca broj milisekundi od epoch-a
+                if (poslednji == null || trenutni.getDatumTestiranja().getTimeInMillis() > poslednji.getDatumTestiranja().getTimeInMillis()) {
+                    poslednji = trenutni;
+                }
+            }
+            citac.close();
+        } catch (FileNotFoundException | ParseException e) {
+            System.out.println("[ERROR je vec testiran]Ili je lose parsovano ili nije nadjen fajl ");
+            e.printStackTrace();
+        }
+        if (poslednji != null){
+            return poslednji.toString();
+        }
+        return "Korisnik se nije ni jednom testirao";
+    }
+
+
+    private GregorianCalendar vratiDatum(String pattern) {
+
+        // this actually works, got rid of the original code idea
+        String[] splitDate = pattern.split("/");
+        int days = Integer.parseInt(splitDate[0]);
+        int month = (Integer.parseInt(splitDate[1]) - 1);
+        int year = Integer.parseInt(splitDate[2]);
+
+        // dates go in properly
+        return new GregorianCalendar(year, month, days);
+
     }
 }

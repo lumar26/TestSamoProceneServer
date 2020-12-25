@@ -53,7 +53,7 @@ public class ClientHandler extends Thread {
 //			mozda bi za ovo trebalo odmah ovde da se odradi try catch
             odgovor = primiPoruku();
         } while (odgovor == null || odgovor.equals(""));
-        return odgovor;
+        return odgovor.trim();
     }
 
     public Korisnik registrujKorisnika() throws IOException {
@@ -65,7 +65,7 @@ public class ClientHandler extends Thread {
         prezime = unesiKredencijal("registracija.prezime");
         pol = unesiKredencijal("registracija.pol");
         email = unesiKredencijal("registracija.email");
-        Korisnik novi = new Korisnik(username, password, ime, prezime, pol, email);
+        Korisnik novi = new Korisnik(username, password, ime, prezime, pol, email, Status.POCETAN);
         if (evidencija.postojiKorisnikUBazi(novi)) return null;
 //        ako je vec registrovan vracamo null, a ako moze da se registruje ondak cemo da probamo da ga ubacimo u fajl i da ga vratimo
         if (evidencija.dodajKorisnika(novi)) {
@@ -103,8 +103,12 @@ public class ClientHandler extends Thread {
                 default:
                     break;
             }
-            if (korisnikHoceIzlaz) return null;
+            if (korisnikHoceIzlaz) {
+                System.out.println("Korisni je izabrao da izadje iz dela za prijavljivanje");
+                break;
+            }
         }
+        return null;
     }
 
     public int samoproceni(String upit) throws IOException {
@@ -121,30 +125,6 @@ public class ClientHandler extends Thread {
         }
     }
 
-    public void evidentirajTestiranje(Korisnik korisnik, TipTesta tipTesta, Status status) {
-        switch (status) {
-//		ovde su ovi statusi visak jer svakako prosledjujem status i rezultat testa
-            case POZITIVAN:
-                evidencija.dodajTestiranje(new Test(tipTesta, Status.POZITIVAN, new GregorianCalendar(), korisnik));
-//			korisnik.getTestiranja().add(new Test(tipTesta, Status.POZITIVAN, new GregorianCalendar(), korisnik));
-                break;
-            case NEGATIVAN:
-                evidencija.dodajTestiranje(new Test(tipTesta, Status.NEGATIVAN, new GregorianCalendar(), korisnik));
-//			korisnik.getTestiranja().add(new Test(TipTesta.BRZI, Status.NEGATIVAN, new GregorianCalendar(), korisnik));
-                break;
-            case PCR_POZITIVAN:
-                evidencija.dodajTestiranje(new Test(tipTesta, Status.PCR_POZITIVAN, new GregorianCalendar(), korisnik));
-//			korisnik.getTestiranja().add(new Test(TipTesta.PCR, Status.PCR_POZITIVAN, new GregorianCalendar(), korisnik));
-                break;
-            case PCR_NEGATIVAN:
-                evidencija.dodajTestiranje(new Test(tipTesta, Status.PCR_NEGATIVAN, new GregorianCalendar(), korisnik));
-//			korisnik.getTestiranja().add(new Test(TipTesta.PCR, Status.PCR_NEGATIVAN, new GregorianCalendar(), korisnik));
-                break;
-            default:
-                break;
-        }
-    }
-
     public void brzoTestiranje(Korisnik korisnik) {
         int razultatTesta = (int) Math.round(Math.random());
         if (razultatTesta == 1) {
@@ -152,12 +132,12 @@ public class ClientHandler extends Thread {
 //			ovde se setuje trenutno stanje
             korisnik.setTrenutniStatus(Status.POZITIVAN);
 //			azuriranje evidencije
-            evidentirajTestiranje(korisnik, TipTesta.BRZI, Status.POZITIVAN);
+            evidencija.dodajTestiranje(korisnik, TipTesta.BRZI, Status.POZITIVAN);
 
         } else {
             tokKaKlijentu.println("Rezultat vaseg brzog testa je negativan.");
             korisnik.setTrenutniStatus(Status.NEGATIVAN);
-            evidentirajTestiranje(korisnik, TipTesta.BRZI, Status.NEGATIVAN);
+            evidencija.dodajTestiranje(korisnik, TipTesta.BRZI, Status.NEGATIVAN);
         }
     }
 
@@ -167,40 +147,40 @@ public class ClientHandler extends Thread {
             posaljiPoruku("poruka.pozitivanPCRTest");
             korisnik.setTrenutniStatus(Status.PCR_POZITIVAN);
 //			azuriranje evidencije
-            evidentirajTestiranje(korisnik, TipTesta.PCR, Status.PCR_POZITIVAN);
+            evidencija.dodajTestiranje(korisnik, TipTesta.PCR, Status.PCR_POZITIVAN);
         } else {
             posaljiPoruku("poruka.negativanPCRTest");
             korisnik.setTrenutniStatus(Status.PCR_NEGATIVAN);
-            evidentirajTestiranje(korisnik, TipTesta.PCR, Status.PCR_NEGATIVAN);
+            evidencija.dodajTestiranje(korisnik, TipTesta.PCR, Status.PCR_NEGATIVAN);
         }
     }
 
-    private boolean jeVecTestiran(Korisnik korisnik, TipTesta tip) {
-        if (korisnik == null) {
-            System.err.println("Korisnik " + korisnik.getIme() + " zza koga se gleda dal je testiran ne postoji");
-            return false;
-        }
-        if (korisnik.getTestiranja() == null) {
-            System.err.println("Lista testiranja kod korisnika" + korisnik.getIme() + " nije inicijalizovana");
-            return false;
-        }
-        if (korisnik.getTestiranja().getLast() == null) {
-            System.err.println("nema testiranja u listi testiranja kod korisnika " + korisnik.getIme());
-            return false;
-        }
-//		prvo provera da li se korisnik vec testirao danas (za bilo koji test)
-        if ((korisnik.getTestiranja().getLast().getDatumTestiranja().get(Calendar.YEAR) == new GregorianCalendar()
-                .get(Calendar.YEAR)
-                && korisnik.getTestiranja().getLast().getDatumTestiranja()
-                .get(Calendar.MONTH) == new GregorianCalendar().get(Calendar.MONTH)
-                && korisnik.getTestiranja().getLast().getDatumTestiranja()
-                .get(Calendar.DAY_OF_MONTH) == new GregorianCalendar().get(Calendar.DAY_OF_MONTH)
-                && korisnik.getTestiranja().getLast().getTip() == tip)) {
-            posaljiPoruku("upozorenje.jedanTestDnevno");
-            return true;
-        }
-        return false;
-    }
+//    private boolean jeVecTestiran(Korisnik korisnik, TipTesta tip) {
+//        if (korisnik == null) {
+//            System.err.println("Korisnik " + korisnik.getIme() + " zza koga se gleda dal je testiran ne postoji");
+//            return false;
+//        }
+//        if (korisnik.getTestiranja() == null) {
+//            System.err.println("Lista testiranja kod korisnika" + korisnik.getIme() + " nije inicijalizovana");
+//            return false;
+//        }
+//        if (korisnik.getTestiranja().getLast() == null) {
+//            System.err.println("nema testiranja u listi testiranja kod korisnika " + korisnik.getIme());
+//            return false;
+//        }
+////		prvo provera da li se korisnik vec testirao danas (za bilo koji test)
+//        if ((korisnik.getTestiranja().getLast().getDatumTestiranja().get(Calendar.YEAR) == new GregorianCalendar()
+//                .get(Calendar.YEAR)
+//                && korisnik.getTestiranja().getLast().getDatumTestiranja()
+//                .get(Calendar.MONTH) == new GregorianCalendar().get(Calendar.MONTH)
+//                && korisnik.getTestiranja().getLast().getDatumTestiranja()
+//                .get(Calendar.DAY_OF_MONTH) == new GregorianCalendar().get(Calendar.DAY_OF_MONTH)
+//                && korisnik.getTestiranja().getLast().getTip() == tip)) {
+//            posaljiPoruku("upozorenje.jedanTestDnevno");
+//            return true;
+//        }
+//        return false;
+//    }
 
     public void testirajKorisnika(Korisnik korisnik) throws IOException {
 
@@ -232,21 +212,18 @@ public class ClientHandler extends Thread {
                     if (brojacPotvrdnihOdgovora >= 2)
                         switch (izbor) {
                             case "1":
-                                if (!jeVecTestiran(korisnik, TipTesta.BRZI))
+                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.BRZI))
                                     brzoTestiranje(korisnik);
                                 break;
                             case "2":
-                                if (!jeVecTestiran(korisnik, TipTesta.PCR))
+                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.PCR))
                                     testirajPCR(korisnik);
                                 break;
                             case "3":
-                                if (!jeVecTestiran(korisnik, TipTesta.BRZI) && !jeVecTestiran(korisnik, TipTesta.PCR)) {
+                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.BRZI) && !evidencija.jeVecTestiran(korisnik, TipTesta.PCR)) {
                                     testirajPCR(korisnik);
                                     brzoTestiranje(korisnik);
                                 }
-
-                                break;
-                            case "4":
                                 break;
                             default:
                                 break;
@@ -260,7 +237,8 @@ public class ClientHandler extends Thread {
                     break;
                 case "2":
 //				prikaz korisniku njegovog poslednje testiranja
-                    tokKaKlijentu.println("Poslednje testiranje:\n" + korisnik.getTestiranja().getLast().toString());
+//                    tokKaKlijentu.println("Poslednje testiranje:\n" + korisnik.getTestiranja().getLast().toString());
+                    posaljiIzvestaj(evidencija.poslednjeTestiranje(korisnik));
 
                     break;
                 case "3":
@@ -269,7 +247,6 @@ public class ClientHandler extends Thread {
                     break;
             }
         }
-
     }
 
     public void obradiAdministratora(PrintStream tokKaKlijentu, BufferedReader unosKlijenta)
@@ -331,35 +308,34 @@ public class ClientHandler extends Thread {
                         break;
                     case "2":
                         posaljiPoruku("prijava.uvod");
+
                         Korisnik prijavljeniKorisnik = prijaviKorisnika();
-                        System.err.println("Ovde treba da se pojavi korisnik koji je prijavljen");
-                        System.out.println(prijavljeniKorisnik.toString());
 //	korisnik je prijavljen dakle ima ga u bazi podataka, sad se pristupa pitanjima i testiranju
 //					ako je hteo da se prijavi a nije registrovan vratice se null za prijavljeniKorisnik, pa mu se ponovo otvara glavni meni
                         if (prijavljeniKorisnik != null)
                             testirajKorisnika(prijavljeniKorisnik);
-                        continue;
+
+                        break;
                     case "3":
                         obradiAdministratora(tokKaKlijentu, unosKlijenta);
                         break;
                     case "*quit*":
                         komunikacioniSoket.close();
                         return;
-
                     default:
                         break;
                 }
             }
 
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             System.err.println("Doslo je do problema pri uspostavljanju toka podataka ka klijentu");
             return;
-        } catch (NullPointerException e) {
-            // TODO Auto-generated catch block
-            System.err.println("Korisnik je nasilno napustio aplikaciju");
-            return;
         }
+//         catch (NullPointerException e) {
+//            // TODO Auto-generated catch block
+//            System.err.println("Korisnik je nasilno napustio aplikaciju");
+//            return;
+//        }
     }
 
 }

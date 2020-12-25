@@ -22,18 +22,20 @@ public class Korisnik {
     }
 
     // ovde mi je public pravilo problem
-    public Korisnik(String username, String password, String ime, String prezime, String pol, String email) {
+    public Korisnik(String username, String password, String ime, String prezime, String pol, String email, Status status) {
         this.username = username;
         this.password = password;
         this.ime = ime;
         this.prezime = prezime;
         this.pol = pol;
         this.email = email;
+        this.trenutniStatus = status;
     }
 
     @Override
     public String toString() {
-        return "ime: " + ime + "\t prezime; " + prezime + "\t status: " + trenutniStatus + "\t email: " + email;
+//        vrlo su bitni ovi razmaci ovde i dvotacke
+        return "username:" +this.username+ " password:" +this.password+ " ime:" + ime + " prezime:" + prezime + " pol:" + this.pol+ " email:" + email + " status:" + trenutniStatus ;
     }
 
     @Override

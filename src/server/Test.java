@@ -1,5 +1,6 @@
 package server;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -18,7 +19,13 @@ public class Test {
 	
 	@Override
 	public String toString() {
-		return "Korisnik:"+ this.korisnik.getIme() + "_" + this.korisnik.getPrezime() +  "Tip_testa: " + this.tip + " rezultat_testa: " + this.rezultatTesta + " datum_testiranja: " + this.datumTestiranja;
+//		da prebaacimo datum u citljiv oblik
+		SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+		String formatiraniDatum = df.format(this.datumTestiranja.getTime());
+		System.out.println(formatiraniDatum);
+		return "Korisnik:"+ this.korisnik.getUsername() +
+				" Tip_testa:" + this.tip + " rezultat_testa:" + this.rezultatTesta + " datum_testiranja:"
+				+ formatiraniDatum +"\n";
 	}
 	
 	public TipTesta getTip() {
@@ -26,6 +33,12 @@ public class Test {
 	}
 	public void setTip(TipTesta tip) {
 		this.tip = tip;
+	}
+	public Korisnik getKorisnik() {
+		return korisnik;
+	}
+	public void setkorinsik(Korisnik k) {
+		this.korisnik = k;
 	}
 	public Status getRezultatTesta() {
 		return rezultatTesta;
