@@ -11,15 +11,7 @@ public class Korisnik {
     private String pol;
     private String email;
     StatusKorisnika trenutniStatusKorisnika;
-    private LinkedList<Test> testiranja = new LinkedList<>();
 
-    public LinkedList<Test> getTestiranja() {
-        return testiranja;
-    }
-
-    public void setTestiranja(LinkedList<Test> testiranja) {
-        this.testiranja = testiranja;
-    }
 
     // ovde mi je public pravilo problem
     public Korisnik(String username, String password, String ime, String prezime, String pol, String email, StatusKorisnika statusKorisnika) {
@@ -49,8 +41,7 @@ public class Korisnik {
                 korisnik.getIme()) && Objects.equals(getPrezime(),
                 korisnik.getPrezime()) && Objects.equals(getPol(),
                 korisnik.getPol()) && Objects.equals(getEmail(),
-                korisnik.getEmail()) && getTrenutniStatus() == korisnik.getTrenutniStatus() && Objects.equals(getTestiranja(),
-                korisnik.getTestiranja());
+                korisnik.getEmail()) && getTrenutniStatus() == korisnik.getTrenutniStatus();
     }
 
     public Korisnik zameniStatus(StatusKorisnika noviStatus) {

@@ -1,9 +1,10 @@
 package server;
 
 import java.io.*;
-import java.lang.invoke.SwitchPoint;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 
@@ -30,27 +31,28 @@ public class Evidencija {
 
 
     //	prvo nam treba za upisivanje u fajl
-    public boolean postojiKorisnikUBazi(Korisnik k) {
+    public boolean postojiKorisnikUFajlu(Korisnik k) {
         if (!korisnici.exists()) return false;
-        try {
-            Scanner citac = new Scanner(korisnici);
-            while (citac.hasNextLine()) {
-                String sledecaLinija = citac.nextLine();
-                if (sledecaLinija != null && !sledecaLinija.equals("")) {
-                    System.out.println("Jedna linija procitan iz fajla" + sledecaLinija);
-                    Korisnik rez = linijaUKorisnika(sledecaLinija);
-
-                    if (rez.equals(k)) return true;
-                }
-
-            }
-            citac.close();
-        } catch (FileNotFoundException fnfe) {
-            fnfe.printStackTrace();
-            System.err.println("[ERROR EVIDENCIJA]: Scanner klasa nije mogla da nadje fajl trazeni ");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        List<Korisnik> listaKorisnika = prebaciFajlUListuKorisnika();
+        if(listaKorisnika.contains(k)) return true;
+//        try {
+//            Scanner citac = new Scanner(korisnici);
+//            while (citac.hasNextLine()) {
+//                String sledecaLinija = citac.nextLine();
+//                if (sledecaLinija != null && !sledecaLinija.equals("")) {
+//                    Korisnik rez = linijaUKorisnika(sledecaLinija);
+//
+//                    if (rez.equals(k)) return true;
+//                }
+//
+//            }
+//            citac.close();
+//        } catch (FileNotFoundException fnfe) {
+//            fnfe.printStackTrace();
+//            System.err.println("[ERROR EVIDENCIJA]: Scanner klasa nije mogla da nadje fajl trazeni ");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
         return false;
     }
 
@@ -68,12 +70,11 @@ public class Evidencija {
     }
 
     //    onda nam treba za prelistavanje fajla
-    public Korisnik nadjiKorisnikaUBazi(String username, String password) {
+    public Korisnik nadjiKorisnikaUFajlu(String username, String password) {
         try {
             Scanner citac = new Scanner(korisnici);
             while (citac.hasNextLine()) {
                 Korisnik rez = linijaUKorisnika(citac.nextLine());
-                System.out.println("Jedan korisnik iz fajla" + rez.toString());
                 if (rez.getUsername().equals(username) && rez.getPassword().equals(password)) return rez;
             }
             citac.close();
@@ -83,12 +84,11 @@ public class Evidencija {
         return null;
     }
 
-    public Korisnik nadjiKorisnikaUBazi(String username) {
+    public Korisnik nadjiKorisnikaUFajlu(String username) {
         try {
             Scanner citac = new Scanner(korisnici);
             while (citac.hasNextLine()) {
                 Korisnik rez = linijaUKorisnika(citac.nextLine());
-                System.out.println("Jedan korisnik iz fajla" + rez.toString());
                 if (rez.getUsername().equals(username)) return rez;
             }
             citac.close();
@@ -99,24 +99,13 @@ public class Evidencija {
     }
 
     //    2. sad da odradimo testiranja
-    public boolean dodajTestiranje(Test t) {
-        try {
-            FileWriter upis = new FileWriter(testiranja);
-            upis.write(testULiniju(t));
-            upis.close();
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("[ERROR EVIDENCIJA]: rilikom upoisa novog testiranja u fajl doslo je do greske doslo je do problema");
-            return false;
-        }
-    }
 
     public String izlistajTestoveTipa(StatusKorisnika statusKorisnika) {
         String rez = "";
-        List<Test> testovi = vratiSveTestoveTipa(statusKorisnika);
+        List<Test> testovi = prebaciFajlUListuTestova();
         for (Test t :
                 testovi) {
+            if(t.getRezultatTesta()==statusKorisnika)
             rez += testULiniju(t);
         }
         return rez;
@@ -169,7 +158,7 @@ public class Evidencija {
         GregorianCalendar datum = new GregorianCalendar();
         datum.setTime(d);
         return new Test(TestTip.valueOf(izdvojiKredencijal(kredencijali[1])), StatusKorisnika.valueOf(izdvojiKredencijal(kredencijali[2])),
-                datum, nadjiKorisnikaUBazi(izdvojiKredencijal(kredencijali[0])));
+                datum, nadjiKorisnikaUFajlu(izdvojiKredencijal(kredencijali[0])));
     }
 
     // ovde proveravamo dal je vec testiran korisnik
@@ -177,23 +166,15 @@ public class Evidencija {
         if (!testiranja.exists()) {
             return false;
         }
-        try {
-            System.out.println("Jebanje " + testiranja);
-            Scanner citac = new Scanner(testiranja);
-            while (citac.hasNextLine()) {
-                String linija = citac.nextLine();
-//                if (linija == null || linija.equals("")) return false;
-                if (linijuUTest(linija).getKorisnik().equals(k) && linijuUTest(linija).getTip() == test) return true;
-            }
-            citac.close();
-        } catch (FileNotFoundException | ParseException e) {
-            System.out.println("[ERROR je vec testiran]Ili je lose parsovano ili nije nadjen fajl ");
-            e.printStackTrace();
+        List<Test> testovi = prebaciFajlUListuTestova();
+        for (Test t :
+                testovi) {
+            if (t.getKorisnik().equals(k) && t.getTip() == test) return true;
         }
         return false;
     }
 
-    public boolean dodajTestiranje(Korisnik k, TestTip tip, StatusKorisnika rezultat) {
+    public boolean dodajTestiranjeUFajl(Korisnik k, TestTip tip, StatusKorisnika rezultat) {
         Test t = new Test(tip, rezultat, new GregorianCalendar(), k);
         try {
             FileWriter upis = new FileWriter(testiranja, true);
@@ -209,38 +190,18 @@ public class Evidencija {
 
     public String poslednjeTestiranje(Korisnik k) {
         Test poslednji = null;
-        try {
-            Scanner citac = new Scanner(testiranja);
-            while (citac.hasNextLine()) {
-                Test trenutni = linijuUTest(citac.nextLine());
-//                ovde bi trebalo da ova metoda vraca broj milisekundi od epoch-a
-                if ((trenutni.getKorisnik().equals(k) && poslednji == null) ||
-//                        ili je (gore) pocetni i dalje null a naisli smo na test koji je radio prosledjeni korisnik, ili je isto taj korisnik samo ja radio skorija (dole)
-                        (trenutni.getKorisnik().equals(k) && trenutni.getDatumTestiranja().getTimeInMillis() > poslednji.getDatumTestiranja().getTimeInMillis())) {
-                    poslednji = trenutni;
+        List<Test> testovi = prebaciFajlUListuTestova();
+        for (Test t :
+                testovi) {
+            if ((t.getKorisnik().equals(k) && poslednji == null) ||
+                        (t.getKorisnik().equals(k) && t.getDatumTestiranja().getTimeInMillis() > poslednji.getDatumTestiranja().getTimeInMillis())) {
+                    poslednji = t;
                 }
-            }
-            citac.close();
-        } catch (FileNotFoundException | ParseException e) {
-            System.out.println("[ERROR je vec testiran]Ili je lose parsovano ili nije nadjen fajl ");
-            e.printStackTrace();
         }
         if (poslednji != null){
             return poslednji.toString();
         }
         return "Korisnik se nije ni jednom testirao";
-    }
-
-    private GregorianCalendar vratiDatum(String pattern) {
-
-        String[] splitDate = pattern.split("/");
-        int days = Integer.parseInt(splitDate[0]);
-        int month = (Integer.parseInt(splitDate[1]) - 1);
-        int year = Integer.parseInt(splitDate[2]);
-
-        // dates go in properly
-        return new GregorianCalendar(year, month, days);
-
     }
 
     private List<Korisnik> prebaciFajlUListuKorisnika(){
@@ -259,17 +220,32 @@ public class Evidencija {
         }
         return rez;
     }
+    private List<Test> prebaciFajlUListuTestova() {
+        Scanner citac;
+        List<Test> rez = new LinkedList<>();
+        try  {
+            citac = new Scanner(testiranja);
+
+            while (citac.hasNextLine()){
+                rez.add(linijuUTest(citac.nextLine()));
+            }
+            citac.close();
+        } catch (FileNotFoundException | ParseException e) {
+            System.out.println("[EVIDENCIJA, zameniString]: nije mogao da se inicijalizuje citac");
+            e.printStackTrace();
+        }
+        return rez;
+    }
 
     public void zameniStatusKorisnika(Korisnik korisnik,StatusKorisnika noviStatus) {
 //        planiram da ubacim svaku liniju u listu, onda iz liste da izbacim datog korisnika pa da ga posle ubacim sa novim statusom
         FileWriter brisac, upis;
-        List<Korisnik> listaKorisnika = new LinkedList<>();
+        List<Korisnik> listaKorisnika;
             try  {
                 listaKorisnika = prebaciFajlUListuKorisnika();
 
-                if(postojiKorisnikUBazi(korisnik)){
+                if(postojiKorisnikUFajlu(korisnik)){
 
-                    System.out.println("---------U ovom trenutku se izbacuje korisnik iz liste");
                     listaKorisnika.remove(korisnik);
                     listaKorisnika.add(korisnik.zameniStatus(noviStatus));
 //                    ovde sam korisnika sa zamenjenim statusom dodao u listu
@@ -345,5 +321,17 @@ public class Evidencija {
         }
         return "Broj pozitivnih na brzom testu: " + brziPozitivini +"\nBroj negativnih na brzom testu: " + brziNegativni + "\nBroj pozitivnih na PCR testu: " + pcrPozitivni +
                 "\nBroj negativnih na PCR testu: " + pcrNegativni + "\nBroj korisnika koji su pod nadzorom: " + podNadzorom + "\nBroj prijavljenih korisnika koji se nisu još uvek testirali: "+pocetni;
+    }
+
+    public boolean jeTestiranDanas(Korisnik korisnik) {
+        List<Test> testovi = prebaciFajlUListuTestova();
+        for (Test t :
+                testovi) {
+            LocalDateTime danas = LocalDateTime.now();
+            LocalDateTime prosledjenoVreme = LocalDateTime.ofInstant(t.getDatumTestiranja().toInstant(), ZoneId.systemDefault());
+            if(t.getKorisnik().equals(korisnik) && prosledjenoVreme.getDayOfYear() == danas.getDayOfYear()
+            && prosledjenoVreme.getYear() == danas.getYear()) return true;
+        }
+        return false;
     }
 }

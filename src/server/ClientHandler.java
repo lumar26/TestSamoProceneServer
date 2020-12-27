@@ -5,7 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
-import java.util.GregorianCalendar;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientHandler extends Thread {
 
@@ -30,10 +31,12 @@ public class ClientHandler extends Thread {
     }
 
     private String primiPoruku() throws IOException {
-        return unosKlijenta.readLine();
+        String rez = unosKlijenta.readLine();
+        if(rez.equals("*quit*")) throw new PrekidRadaException("Korisnik je odlucio da izađe iy aplikacije");
+        return rez;
     }
 
-    private String unesiKredencijal(String upit) throws IOException {
+    private String unesiKredencijal(String upit) throws IOException, PrekidRadaException {
         String odgovor;
         do {
             posaljiPoruku(upit);
@@ -43,7 +46,7 @@ public class ClientHandler extends Thread {
         return odgovor.trim();
     }
 
-    public Korisnik registrujKorisnika() throws IOException {
+    public Korisnik registrujKorisnika() throws IOException, PrekidRadaException {
 
 //		posaljiPoruku("----------------------------------\nForma za registraciju\n--------------------------");
         username = unesiKredencijal("registracija.username");
@@ -53,7 +56,7 @@ public class ClientHandler extends Thread {
         pol = unesiKredencijal("registracija.pol");
         email = unesiKredencijal("registracija.email");
         Korisnik novi = new Korisnik(username, password, ime, prezime, pol, email, StatusKorisnika.POCETAN);
-        if (Evidencija.getInstance().postojiKorisnikUBazi(novi)) return null;
+        if (Evidencija.getInstance().postojiKorisnikUFajlu(novi)) return null;
 //        ako je vec registrovan vracamo null, a ako moze da se registruje ondak cemo da probamo da ga ubacimo u fajl i da ga vratimo
         if (Evidencija.getInstance().dodajKorisnikaUFajl(novi)) {
             System.out.println("Uspesno je dodat novi korisnik u fajl");
@@ -64,15 +67,12 @@ public class ClientHandler extends Thread {
 
     }
 
-    public Korisnik prijaviKorisnika() throws IOException {
-        tokKaKlijentu
-                .println("----------------------------------\nForma za prijavljivanje\n--------------------------\n"
-                        + "---- unesite '*meni*' za povratak u glavni meni");
+    public Korisnik prijaviKorisnika() throws IOException, PrekidRadaException {
         while (true) {
             boolean korisnikHoceIzlaz = false;
             username = unesiKredencijal("prijava.username");
             password = unesiKredencijal("prijava.password");
-            Korisnik rez = Evidencija.getInstance().nadjiKorisnikaUBazi(username, password);
+            Korisnik rez = Evidencija.getInstance().nadjiKorisnikaUFajlu(username, password);
             if (rez != null) return rez;
 //            ukoliko ne postoji u bazi, otvara se novi dojalog
 
@@ -98,7 +98,7 @@ public class ClientHandler extends Thread {
         return null;
     }
 
-    public int samoproceni(String upit) throws IOException {
+    public int samoproceni(String upit) throws IOException, PrekidRadaException {
 
         String odgovor;
         while (true) {
@@ -112,7 +112,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    public void brzoTestiranje(Korisnik korisnik) {
+    public void brzoTestiranje(Korisnik korisnik) throws PrekidRadaException {
         int razultatTesta = (int) Math.round(Math.random());
         if (razultatTesta == 1) {
             posaljiPoruku("poruka.pozitivanBrziTest");
@@ -120,59 +120,53 @@ public class ClientHandler extends Thread {
             Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.POZITIVAN);
 //            korisnik.setTrenutniStatus(StatusKorisnika.POZITIVAN);
 //			azuriranje evidencije
-            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.BRZI, StatusKorisnika.POZITIVAN);
+            Evidencija.getInstance().dodajTestiranjeUFajl(korisnik, TestTip.BRZI, StatusKorisnika.POZITIVAN);
 
         } else {
             tokKaKlijentu.println("Rezultat vaseg brzog testa je negativan.");
             korisnik.setTrenutniStatus(StatusKorisnika.NEGATIVAN);
-            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.BRZI, StatusKorisnika.NEGATIVAN);
+            Evidencija.getInstance().dodajTestiranjeUFajl(korisnik, TestTip.BRZI, StatusKorisnika.NEGATIVAN);
         }
     }
 
-    private void testirajPCR(Korisnik korisnik) {
+    private void testirajPCR(Korisnik korisnik) throws PrekidRadaException {
         int razultatTesta = (int) Math.round(Math.random());
-        if (razultatTesta == 1) {
-            posaljiPoruku("poruka.pozitivanPCRTest");
-            Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_POZITIVAN);
-//            korisnik.setTrenutniStatus(StatusKorisnika.PCR_POZITIVAN);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+        Runnable runnable = () -> {
+            try {
+
+                posaljiPoruku("pcr.cekanje");
+                Thread.sleep(1000 * 5);
+                posaljiPoruku("pcr.poslato");
+                Thread.sleep(1000 * 5);
+                posaljiPoruku("pcr.obrada");
+//                posle da se promeni ovde u vise minuta
+                Thread.sleep(1000 * 5);
+
+                if (razultatTesta == 1) {
+                    posaljiPoruku("poruka.pozitivanPCRTest");
+                    Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_POZITIVAN);
 //			azuriranje evidencije
-            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.PCR, StatusKorisnika.PCR_POZITIVAN);
-        } else {
-            posaljiPoruku("poruka.negativanPCRTest");
-//            korisnik.setTrenutniStatus(StatusKorisnika.PCR_NEGATIVAN);
-            Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_NEGATIVAN);
-            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.PCR, StatusKorisnika.PCR_NEGATIVAN);
-        }
+                    Evidencija.getInstance().dodajTestiranjeUFajl(korisnik, TestTip.PCR, StatusKorisnika.PCR_POZITIVAN);
+                } else {
+                    posaljiPoruku("poruka.negativanPCRTest");
+                    Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_NEGATIVAN);
+                    Evidencija.getInstance().dodajTestiranjeUFajl(korisnik, TestTip.PCR, StatusKorisnika.PCR_NEGATIVAN);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Karanje");
+        };
+
+        executorService.submit(runnable);
+
     }
 
-//    private boolean jeVecTestiran(Korisnik korisnik, TipTesta tip) {
-//        if (korisnik == null) {
-//            System.err.println("Korisnik " + korisnik.getIme() + " zza koga se gleda dal je testiran ne postoji");
-//            return false;
-//        }
-//        if (korisnik.getTestiranja() == null) {
-//            System.err.println("Lista testiranja kod korisnika" + korisnik.getIme() + " nije inicijalizovana");
-//            return false;
-//        }
-//        if (korisnik.getTestiranja().getLast() == null) {
-//            System.err.println("nema testiranja u listi testiranja kod korisnika " + korisnik.getIme());
-//            return false;
-//        }
-////		prvo provera da li se korisnik vec testirao danas (za bilo koji test)
-//        if ((korisnik.getTestiranja().getLast().getDatumTestiranja().get(Calendar.YEAR) == new GregorianCalendar()
-//                .get(Calendar.YEAR)
-//                && korisnik.getTestiranja().getLast().getDatumTestiranja()
-//                .get(Calendar.MONTH) == new GregorianCalendar().get(Calendar.MONTH)
-//                && korisnik.getTestiranja().getLast().getDatumTestiranja()
-//                .get(Calendar.DAY_OF_MONTH) == new GregorianCalendar().get(Calendar.DAY_OF_MONTH)
-//                && korisnik.getTestiranja().getLast().getTip() == tip)) {
-//            posaljiPoruku("upozorenje.jedanTestDnevno");
-//            return true;
-//        }
-//        return false;
-//    }
+    public void testirajKorisnika(Korisnik korisnik) throws IOException, NullPointerException, PrekidRadaException {
 
-    public void testirajKorisnika(Korisnik korisnik) throws IOException, NullPointerException {
+
 
         while (true) {
             posaljiPoruku("testiranje.meni");
@@ -181,13 +175,12 @@ public class ClientHandler extends Thread {
 
             switch (akcija) {
                 case "1":
-
+                    if(Evidencija.getInstance().jeTestiranDanas(korisnik)){
+                        posaljiPoruku("upozorenje.jedanTestDnevno");
+                        break;
+                    }
                     int brojacPotvrdnihOdgovora = 0;
                     posaljiPoruku("samoprocena.uvod");
-//				ovde postavljamo sedam pitanja vezanih za samoprocenu
-//				for (int i = 0; i < 7; i++) {
-//					brojacPotvrdnihOdgovora += samoproceni("samoprocena.pitanje" + i);
-//				}
 
                     brojacPotvrdnihOdgovora += samoproceni("samoprocena.pitanje1");
                     brojacPotvrdnihOdgovora += samoproceni("samoprocena.pitanje2");
@@ -219,15 +212,12 @@ public class ClientHandler extends Thread {
                                 break;
                         }
                     else {
-//					korisnik je imao negativan test
-                        korisnik.setTrenutniStatus(StatusKorisnika.POD_NADZOROM); // menja mu se trenutni status
-                        // dodajemo jedno testiranje u listu testiranja tog korisnika
-                        korisnik.getTestiranja().add(new Test(TestTip.BRZI, StatusKorisnika.POD_NADZOROM, new GregorianCalendar(), korisnik));
+//					korisnik nije imao dovoljno potvrdnih odgovora
+                        Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.POD_NADZOROM);
                     }
                     break;
                 case "2":
 //				prikaz korisniku njegovog poslednje testiranja
-//                    tokKaKlijentu.println("Poslednje testiranje:\n" + korisnik.getTestiranja().getLast().toString());
                     posaljiIzvestaj(Evidencija.getInstance().poslednjeTestiranje(korisnik));
 
                     break;
@@ -240,7 +230,7 @@ public class ClientHandler extends Thread {
     }
 
     public void obradiAdministratora(PrintStream tokKaKlijentu, BufferedReader unosKlijenta)
-            throws NumberFormatException, IOException, NullPointerException {
+            throws NumberFormatException, IOException, NullPointerException, PrekidRadaException {
         posaljiPoruku("admin.uvod");
         int izbor;
 //		Korisnik moze da prekine komunikaciju nasilno ili unosom '*quit*'
@@ -275,6 +265,10 @@ public class ClientHandler extends Thread {
                     posaljiPoruku("admin.izvestajPodNadzorom");
                     posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POD_NADZOROM));
                     break;
+                case "7":
+                    posaljiPoruku("admin.izvestajStatistika");
+                    posaljiIzvestaj(Evidencija.getInstance().prikaziStatistiku());
+                    break;
                 case "0":
                     return;
                 default:
@@ -292,15 +286,11 @@ public class ClientHandler extends Thread {
             System.out.println("Inicijalizovani su tokovi ka korisniku!");
             while (true) {
                 posaljiPoruku("glavniMeni");
-//				tokKaKlijentu.println("Glavni meni treba ovde da se pojavi");
-
-                String izbor = unosKlijenta.readLine();
+                String izbor = primiPoruku();
 
                 switch (izbor) {
                     case "1":
                         Korisnik noviKorisnik = registrujKorisnika();
-//					evidencija.registrovaniKorisnici.add(noviKorisnik);
-//					System.out.println(evidencija.registrovaniKorisnici.getLast().toString());
                         posaljiPoruku("registracija.uspesna");
 
                         break;
@@ -329,11 +319,13 @@ public class ClientHandler extends Thread {
             System.err.println("Doslo je do problema pri uspostavljanju toka podataka ka klijentu");
             return;
         }
-//         catch (NullPointerException e) {
-//            // TODO Auto-generated catch block
-//            System.err.println("Korisnik je nasilno napustio aplikaciju");
-//            return;
-//        }
+        catch (NullPointerException npe) {
+            System.err.println("Korisnik je nasilno prekinuo aplikaciju");
+        }
+        catch (PrekidRadaException e){
+            System.out.println(e.getMessage());
+            posaljiPoruku("klijent.prekid");
+        }
     }
 
 }
