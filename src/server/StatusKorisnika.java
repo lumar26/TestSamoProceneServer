@@ -1,5 +1,5 @@
 package server;
 
-public enum Status {
+public enum StatusKorisnika {
 	POZITIVAN, PCR_POZITIVAN, PCR_NEGATIVAN, NEGATIVAN, POD_NADZOROM, SVI, POCETAN
 }

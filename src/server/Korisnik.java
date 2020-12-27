@@ -10,7 +10,7 @@ public class Korisnik {
     private String prezime;
     private String pol;
     private String email;
-    Status trenutniStatus;
+    StatusKorisnika trenutniStatusKorisnika;
     private LinkedList<Test> testiranja = new LinkedList<>();
 
     public LinkedList<Test> getTestiranja() {
@@ -22,20 +22,20 @@ public class Korisnik {
     }
 
     // ovde mi je public pravilo problem
-    public Korisnik(String username, String password, String ime, String prezime, String pol, String email, Status status) {
+    public Korisnik(String username, String password, String ime, String prezime, String pol, String email, StatusKorisnika statusKorisnika) {
         this.username = username;
         this.password = password;
         this.ime = ime;
         this.prezime = prezime;
         this.pol = pol;
         this.email = email;
-        this.trenutniStatus = status;
+        this.trenutniStatusKorisnika = statusKorisnika;
     }
 
     @Override
     public String toString() {
 //        vrlo su bitni ovi razmaci ovde i dvotacke
-        return "username:" +this.username+ " password:" +this.password+ " ime:" + ime + " prezime:" + prezime + " pol:" + this.pol+ " email:" + email + " status:" + trenutniStatus ;
+        return "username:" +this.username+ " password:" +this.password+ " ime:" + ime + " prezime:" + prezime + " pol:" + this.pol+ " email:" + email + " status:" + trenutniStatusKorisnika + "\n";
     }
 
     @Override
@@ -53,9 +53,9 @@ public class Korisnik {
                 korisnik.getTestiranja());
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getUsername(), getPassword(), getIme(), getPrezime(), getPol(), getEmail(), getTrenutniStatus(), getTestiranja());
+    public Korisnik zameniStatus(StatusKorisnika noviStatus) {
+        this.trenutniStatusKorisnika = noviStatus;
+        return this;
     }
 
     //	geteri i seteri za atribute korisnika
@@ -107,12 +107,12 @@ public class Korisnik {
         this.email = email;
     }
 
-    public Status getTrenutniStatus() {
-        return trenutniStatus;
+    public StatusKorisnika getTrenutniStatus() {
+        return trenutniStatusKorisnika;
     }
 
-    public void setTrenutniStatus(Status status) {
-        this.trenutniStatus = status;
+    public void setTrenutniStatus(StatusKorisnika statusKorisnika) {
+        this.trenutniStatusKorisnika = statusKorisnika;
     }
 
 }

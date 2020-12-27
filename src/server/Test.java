@@ -1,16 +1,15 @@
 package server;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.GregorianCalendar;
 
 public class Test {
-	private TipTesta tip;
-	private Status rezultatTesta;
+	private TestTip tip;
+	private StatusKorisnika rezultatTesta;
 	private GregorianCalendar datumTestiranja;
 	private Korisnik korisnik;
 	
-	public Test(TipTesta tip, Status rezultatTesta, GregorianCalendar datumTestiranja, Korisnik korisnik) {
+	public Test(TestTip tip, StatusKorisnika rezultatTesta, GregorianCalendar datumTestiranja, Korisnik korisnik) {
 		this.tip = tip;
 		this.rezultatTesta = rezultatTesta;
 		this.datumTestiranja = datumTestiranja;
@@ -28,10 +27,10 @@ public class Test {
 				+ formatiraniDatum +"\n";
 	}
 	
-	public TipTesta getTip() {
+	public TestTip getTip() {
 		return tip;
 	}
-	public void setTip(TipTesta tip) {
+	public void setTip(TestTip tip) {
 		this.tip = tip;
 	}
 	public Korisnik getKorisnik() {
@@ -40,10 +39,10 @@ public class Test {
 	public void setkorinsik(Korisnik k) {
 		this.korisnik = k;
 	}
-	public Status getRezultatTesta() {
+	public StatusKorisnika getRezultatTesta() {
 		return rezultatTesta;
 	}
-	public void setRezultatTesta(Status rezultatTesta) {
+	public void setRezultatTesta(StatusKorisnika rezultatTesta) {
 		this.rezultatTesta = rezultatTesta;
 	}
 	public GregorianCalendar getDatumTestiranja() {

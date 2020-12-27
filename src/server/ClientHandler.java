@@ -4,20 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ClientHandler extends Thread {
 
@@ -26,7 +14,6 @@ public class ClientHandler extends Thread {
     PrintStream tokKaKlijentu;
     String username, password, ime, prezime, pol, email;
     boolean isSignedUp = false;
-    Evidencija evidencija = Evidencija.getInstance();
     private Util util = new Util();
 
     public ClientHandler(Socket s) {
@@ -65,10 +52,10 @@ public class ClientHandler extends Thread {
         prezime = unesiKredencijal("registracija.prezime");
         pol = unesiKredencijal("registracija.pol");
         email = unesiKredencijal("registracija.email");
-        Korisnik novi = new Korisnik(username, password, ime, prezime, pol, email, Status.POCETAN);
-        if (evidencija.postojiKorisnikUBazi(novi)) return null;
+        Korisnik novi = new Korisnik(username, password, ime, prezime, pol, email, StatusKorisnika.POCETAN);
+        if (Evidencija.getInstance().postojiKorisnikUBazi(novi)) return null;
 //        ako je vec registrovan vracamo null, a ako moze da se registruje ondak cemo da probamo da ga ubacimo u fajl i da ga vratimo
-        if (evidencija.dodajKorisnika(novi)) {
+        if (Evidencija.getInstance().dodajKorisnikaUFajl(novi)) {
             System.out.println("Uspesno je dodat novi korisnik u fajl");
             return novi;
         }
@@ -85,7 +72,7 @@ public class ClientHandler extends Thread {
             boolean korisnikHoceIzlaz = false;
             username = unesiKredencijal("prijava.username");
             password = unesiKredencijal("prijava.password");
-            Korisnik rez = evidencija.nadjiKorisnikaUBazi(username, password);
+            Korisnik rez = Evidencija.getInstance().nadjiKorisnikaUBazi(username, password);
             if (rez != null) return rez;
 //            ukoliko ne postoji u bazi, otvara se novi dojalog
 
@@ -130,14 +117,15 @@ public class ClientHandler extends Thread {
         if (razultatTesta == 1) {
             posaljiPoruku("poruka.pozitivanBrziTest");
 //			ovde se setuje trenutno stanje
-            korisnik.setTrenutniStatus(Status.POZITIVAN);
+            Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.POZITIVAN);
+//            korisnik.setTrenutniStatus(StatusKorisnika.POZITIVAN);
 //			azuriranje evidencije
-            evidencija.dodajTestiranje(korisnik, TipTesta.BRZI, Status.POZITIVAN);
+            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.BRZI, StatusKorisnika.POZITIVAN);
 
         } else {
             tokKaKlijentu.println("Rezultat vaseg brzog testa je negativan.");
-            korisnik.setTrenutniStatus(Status.NEGATIVAN);
-            evidencija.dodajTestiranje(korisnik, TipTesta.BRZI, Status.NEGATIVAN);
+            korisnik.setTrenutniStatus(StatusKorisnika.NEGATIVAN);
+            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.BRZI, StatusKorisnika.NEGATIVAN);
         }
     }
 
@@ -145,13 +133,15 @@ public class ClientHandler extends Thread {
         int razultatTesta = (int) Math.round(Math.random());
         if (razultatTesta == 1) {
             posaljiPoruku("poruka.pozitivanPCRTest");
-            korisnik.setTrenutniStatus(Status.PCR_POZITIVAN);
+            Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_POZITIVAN);
+//            korisnik.setTrenutniStatus(StatusKorisnika.PCR_POZITIVAN);
 //			azuriranje evidencije
-            evidencija.dodajTestiranje(korisnik, TipTesta.PCR, Status.PCR_POZITIVAN);
+            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.PCR, StatusKorisnika.PCR_POZITIVAN);
         } else {
             posaljiPoruku("poruka.negativanPCRTest");
-            korisnik.setTrenutniStatus(Status.PCR_NEGATIVAN);
-            evidencija.dodajTestiranje(korisnik, TipTesta.PCR, Status.PCR_NEGATIVAN);
+//            korisnik.setTrenutniStatus(StatusKorisnika.PCR_NEGATIVAN);
+            Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.PCR_NEGATIVAN);
+            Evidencija.getInstance().dodajTestiranje(korisnik, TestTip.PCR, StatusKorisnika.PCR_NEGATIVAN);
         }
     }
 
@@ -182,7 +172,7 @@ public class ClientHandler extends Thread {
 //        return false;
 //    }
 
-    public void testirajKorisnika(Korisnik korisnik) throws IOException {
+    public void testirajKorisnika(Korisnik korisnik) throws IOException, NullPointerException {
 
         while (true) {
             posaljiPoruku("testiranje.meni");
@@ -212,15 +202,15 @@ public class ClientHandler extends Thread {
                     if (brojacPotvrdnihOdgovora >= 2)
                         switch (izbor) {
                             case "1":
-                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.BRZI))
+                                if (!Evidencija.getInstance().jeVecTestiran(korisnik, TestTip.BRZI))
                                     brzoTestiranje(korisnik);
                                 break;
                             case "2":
-                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.PCR))
+                                if (!Evidencija.getInstance().jeVecTestiran(korisnik, TestTip.PCR))
                                     testirajPCR(korisnik);
                                 break;
                             case "3":
-                                if (!evidencija.jeVecTestiran(korisnik, TipTesta.BRZI) && !evidencija.jeVecTestiran(korisnik, TipTesta.PCR)) {
+                                if (!Evidencija.getInstance().jeVecTestiran(korisnik, TestTip.BRZI) && !Evidencija.getInstance().jeVecTestiran(korisnik, TestTip.PCR)) {
                                     testirajPCR(korisnik);
                                     brzoTestiranje(korisnik);
                                 }
@@ -230,15 +220,15 @@ public class ClientHandler extends Thread {
                         }
                     else {
 //					korisnik je imao negativan test
-                        korisnik.setTrenutniStatus(Status.POD_NADZOROM); // menja mu se trenutni status
+                        korisnik.setTrenutniStatus(StatusKorisnika.POD_NADZOROM); // menja mu se trenutni status
                         // dodajemo jedno testiranje u listu testiranja tog korisnika
-                        korisnik.getTestiranja().add(new Test(TipTesta.BRZI, Status.POD_NADZOROM, new GregorianCalendar(), korisnik));
+                        korisnik.getTestiranja().add(new Test(TestTip.BRZI, StatusKorisnika.POD_NADZOROM, new GregorianCalendar(), korisnik));
                     }
                     break;
                 case "2":
 //				prikaz korisniku njegovog poslednje testiranja
 //                    tokKaKlijentu.println("Poslednje testiranje:\n" + korisnik.getTestiranja().getLast().toString());
-                    posaljiIzvestaj(evidencija.poslednjeTestiranje(korisnik));
+                    posaljiIzvestaj(Evidencija.getInstance().poslednjeTestiranje(korisnik));
 
                     break;
                 case "3":
@@ -250,7 +240,7 @@ public class ClientHandler extends Thread {
     }
 
     public void obradiAdministratora(PrintStream tokKaKlijentu, BufferedReader unosKlijenta)
-            throws NumberFormatException, IOException {
+            throws NumberFormatException, IOException, NullPointerException {
         posaljiPoruku("admin.uvod");
         int izbor;
 //		Korisnik moze da prekine komunikaciju nasilno ili unosom '*quit*'
@@ -262,22 +252,30 @@ public class ClientHandler extends Thread {
 //			na osnovu izbora izlistavamo sta korisnik zeli
             switch (unos) {
                 case "1":
-                    posaljiPoruku("admin.izlistavanjeSvi");
-                    posaljiIzvestaj(evidencija.izlistajTestoveTipa(Status.SVI));
+                    posaljiPoruku("admin.izvestajSviKorisnici");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.SVI));
                     break;
                 case "2":
-                    posaljiPoruku("admin.izlistavanjePozitivni");
-                    posaljiIzvestaj(evidencija.izlistajTestoveTipa(Status.PCR_POZITIVAN) + evidencija.izlistajTestoveTipa(Status.POZITIVAN));
+                    posaljiPoruku("admin.izvestajBrziPozitivni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POZITIVAN));
                     break;
                 case "3":
-                    posaljiPoruku("admin.izlistavanjeNegativni");
-                    posaljiIzvestaj(evidencija.izlistajTestoveTipa(Status.PCR_NEGATIVAN) + evidencija.izlistajTestoveTipa(Status.NEGATIVAN));
+                    posaljiPoruku("admin.izvestajBrziNegativni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.NEGATIVAN));
                     break;
                 case "4":
-                    posaljiPoruku("admin.izlistavanjeNadzor");
-                    posaljiIzvestaj(evidencija.izlistajTestoveTipa(Status.POD_NADZOROM));
+                    posaljiPoruku("admin.izvestajPCRPozitivni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_POZITIVAN));
                     break;
                 case "5":
+                    posaljiPoruku("admin.izvestajPCRNegativni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_NEGATIVAN));
+                    break;
+                case "6":
+                    posaljiPoruku("admin.izvestajPodNadzorom");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POD_NADZOROM));
+                    break;
+                case "0":
                     return;
                 default:
                     break;

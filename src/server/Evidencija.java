@@ -1,7 +1,7 @@
 package server;
 
 import java.io.*;
-import java.lang.ref.SoftReference;
+import java.lang.invoke.SwitchPoint;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -15,14 +15,14 @@ public class Evidencija {
 
     public static Evidencija getInstance() {
         if (instance == null) {
-            return new Evidencija();
+            instance = new Evidencija();
         }
         return instance;
     }
 
     private Evidencija() {
-        korisnici = new File("registrovaniKorisnici.txt");
-        testiranja = new File("testiranja.txt");
+            korisnici = new File("registrovaniKorisnici.txt");
+            testiranja = new File("testiranja.txt");
     }
 
 
@@ -54,7 +54,7 @@ public class Evidencija {
         return false;
     }
 
-    public boolean dodajKorisnika(Korisnik k) {
+    public boolean dodajKorisnikaUFajl(Korisnik k) {
         try {
             FileWriter upis = new FileWriter(korisnici, true);
             upis.write(korisnikULiniju(k));
@@ -112,9 +112,9 @@ public class Evidencija {
         }
     }
 
-    public String izlistajTestoveTipa(Status status) {
+    public String izlistajTestoveTipa(StatusKorisnika statusKorisnika) {
         String rez = "";
-        List<Test> testovi = vratiSveTestoveTipa(status);
+        List<Test> testovi = vratiSveTestoveTipa(statusKorisnika);
         for (Test t :
                 testovi) {
             rez += testULiniju(t);
@@ -122,13 +122,13 @@ public class Evidencija {
         return rez;
     }
 
-    private List<Test> vratiSveTestoveTipa(Status status) {
+    private List<Test> vratiSveTestoveTipa(StatusKorisnika statusKorisnika) {
         List<Test> testovi = new ArrayList<>();
 
         try (Scanner citac = new Scanner(testiranja)) {
             while (citac.hasNextLine()) {
                 Test t = linijuUTest(citac.nextLine());
-                if (t.getRezultatTesta().equals(status)) testovi.add(t);
+                if (t.getRezultatTesta().equals(statusKorisnika)) testovi.add(t);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -141,9 +141,9 @@ public class Evidencija {
 //		nama je linija oblika: username:luka password:1234 ime:Luka itd...
         String[] kredencijali = linija.split(" ");
 //		imamo 6 kredeencijala, ne bi trebalo \n na kraju sto je da nam pravi problem
-        Status status = Status.valueOf(izdvojiKredencijal(kredencijali[6]));
+        StatusKorisnika statusKorisnika = StatusKorisnika.valueOf(izdvojiKredencijal(kredencijali[6]));
         return new Korisnik(izdvojiKredencijal(kredencijali[0]), izdvojiKredencijal(kredencijali[1]), izdvojiKredencijal(kredencijali[2]),
-                izdvojiKredencijal(kredencijali[3]), izdvojiKredencijal(kredencijali[4]), izdvojiKredencijal(kredencijali[5]), status);
+                izdvojiKredencijal(kredencijali[3]), izdvojiKredencijal(kredencijali[4]), izdvojiKredencijal(kredencijali[5]), statusKorisnika);
     }
 
     private String korisnikULiniju(Korisnik k) {
@@ -168,13 +168,17 @@ public class Evidencija {
         Date d = df.parse(izdvojiKredencijal(kredencijali[3]));
         GregorianCalendar datum = new GregorianCalendar();
         datum.setTime(d);
-        return new Test(TipTesta.valueOf(izdvojiKredencijal(kredencijali[1])), Status.valueOf(izdvojiKredencijal(kredencijali[2])),
+        return new Test(TestTip.valueOf(izdvojiKredencijal(kredencijali[1])), StatusKorisnika.valueOf(izdvojiKredencijal(kredencijali[2])),
                 datum, nadjiKorisnikaUBazi(izdvojiKredencijal(kredencijali[0])));
     }
 
     // ovde proveravamo dal je vec testiran korisnik
-    public boolean jeVecTestiran(Korisnik k, TipTesta test) {
+    public boolean jeVecTestiran(Korisnik k, TestTip test) {
+        if (!testiranja.exists()) {
+            return false;
+        }
         try {
+            System.out.println("Jebanje " + testiranja);
             Scanner citac = new Scanner(testiranja);
             while (citac.hasNextLine()) {
                 String linija = citac.nextLine();
@@ -189,7 +193,7 @@ public class Evidencija {
         return false;
     }
 
-    public boolean dodajTestiranje(Korisnik k, TipTesta tip, Status rezultat) {
+    public boolean dodajTestiranje(Korisnik k, TestTip tip, StatusKorisnika rezultat) {
         Test t = new Test(tip, rezultat, new GregorianCalendar(), k);
         try {
             FileWriter upis = new FileWriter(testiranja, true);
@@ -208,10 +212,11 @@ public class Evidencija {
         try {
             Scanner citac = new Scanner(testiranja);
             while (citac.hasNextLine()) {
-                String linija = citac.nextLine();
-                Test trenutni = linijuUTest(linija);
+                Test trenutni = linijuUTest(citac.nextLine());
 //                ovde bi trebalo da ova metoda vraca broj milisekundi od epoch-a
-                if (poslednji == null || trenutni.getDatumTestiranja().getTimeInMillis() > poslednji.getDatumTestiranja().getTimeInMillis()) {
+                if ((trenutni.getKorisnik().equals(k) && poslednji == null) ||
+//                        ili je (gore) pocetni i dalje null a naisli smo na test koji je radio prosledjeni korisnik, ili je isto taj korisnik samo ja radio skorija (dole)
+                        (trenutni.getKorisnik().equals(k) && trenutni.getDatumTestiranja().getTimeInMillis() > poslednji.getDatumTestiranja().getTimeInMillis())) {
                     poslednji = trenutni;
                 }
             }
@@ -226,10 +231,8 @@ public class Evidencija {
         return "Korisnik se nije ni jednom testirao";
     }
 
-
     private GregorianCalendar vratiDatum(String pattern) {
 
-        // this actually works, got rid of the original code idea
         String[] splitDate = pattern.split("/");
         int days = Integer.parseInt(splitDate[0]);
         int month = (Integer.parseInt(splitDate[1]) - 1);
@@ -238,5 +241,109 @@ public class Evidencija {
         // dates go in properly
         return new GregorianCalendar(year, month, days);
 
+    }
+
+    private List<Korisnik> prebaciFajlUListuKorisnika(){
+        Scanner citac;
+        List<Korisnik> rez = new LinkedList<>();
+        try  {
+            citac = new Scanner(korisnici);
+
+            while (citac.hasNextLine()){
+                rez.add(linijaUKorisnika(citac.nextLine()));
+            }
+            citac.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("[EVIDENCIJA, zameniString]: nije mogao da se inicijalizuje citac");
+            e.printStackTrace();
+        }
+        return rez;
+    }
+
+    public void zameniStatusKorisnika(Korisnik korisnik,StatusKorisnika noviStatus) {
+//        planiram da ubacim svaku liniju u listu, onda iz liste da izbacim datog korisnika pa da ga posle ubacim sa novim statusom
+        FileWriter brisac, upis;
+        List<Korisnik> listaKorisnika = new LinkedList<>();
+            try  {
+                listaKorisnika = prebaciFajlUListuKorisnika();
+
+                if(postojiKorisnikUBazi(korisnik)){
+
+                    System.out.println("---------U ovom trenutku se izbacuje korisnik iz liste");
+                    listaKorisnika.remove(korisnik);
+                    listaKorisnika.add(korisnik.zameniStatus(noviStatus));
+//                    ovde sam korisnika sa zamenjenim statusom dodao u listu
+                }else{
+                    System.out.println("korisnik koji je prosledjen se uopste nije nalazio u listi");
+                }
+//                ovim sam obezbedio da ovaj upis prvo izbrise sav sadrzaj pa da tek onda upisuje
+                brisac = new FileWriter(korisnici, false);
+                brisac.write("");
+                brisac.close();
+//                sad krecemo da ubacujemo iz liste
+                upis = new FileWriter(korisnici, true);
+                for (Korisnik k :
+                        listaKorisnika) {
+                    upis.write(korisnikULiniju(k));
+                }
+
+
+//                zatvaramo tokove
+                upis.close();
+            } catch (FileNotFoundException e) {
+                System.out.println("[EVIDENCIJA, zameniString]: nije mogao da se inicijalizuje citac");
+                e.printStackTrace();
+            } catch (IOException e) {
+                System.out.println("[EVIDENCIJA, zameniString]: nije mogao da se inicijalizuje upis");
+                e.printStackTrace();
+            }
+    }
+
+    public String izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika s) {
+        String rez = "";
+        List<Korisnik> lista = prebaciFajlUListuKorisnika();
+        if (StatusKorisnika.SVI == s) {
+            for (Korisnik k :
+                    lista) {
+                rez += k.toString();
+            }
+        }else{
+            for (Korisnik k :
+                    lista) {
+                if(k.getTrenutniStatus() == s) rez += k.toString();
+            }
+        }
+        return rez;
+    }
+
+    public String prikaziStatistiku() {
+        int brziNegativni = 0, brziPozitivini = 0, pcrPozitivni = 0, pcrNegativni = 0, podNadzorom = 0, pocetni = 0;
+        List<Korisnik> listaKOrisnika = prebaciFajlUListuKorisnika();
+        for (Korisnik k :
+                listaKOrisnika) {
+            switch (k.getTrenutniStatus()){
+                case NEGATIVAN:
+                    brziNegativni++;
+                    break;
+                case POZITIVAN:
+                    brziPozitivini++;
+                    break;
+                case PCR_NEGATIVAN:
+                    pcrNegativni++;
+                    break;
+                case PCR_POZITIVAN:
+                    pcrPozitivni++;
+                    break;
+                case POD_NADZOROM:
+                    podNadzorom++;
+                    break;
+                case POCETAN:
+                    pocetni++;
+                    break;
+
+            }
+        }
+        return "Broj pozitivnih na brzom testu: " + brziPozitivini +"\nBroj negativnih na brzom testu: " + brziNegativni + "\nBroj pozitivnih na PCR testu: " + pcrPozitivni +
+                "\nBroj negativnih na PCR testu: " + pcrNegativni + "\nBroj korisnika koji su pod nadzorom: " + podNadzorom + "\nBroj prijavljenih korisnika koji se nisu još uvek testirali: "+pocetni;
     }
 }

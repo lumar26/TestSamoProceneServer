@@ -68,15 +68,17 @@ public class Util {
 
 //		admin mode
 		poruka.put("admin.uvod",
-				"------------------------------------\n-----------------Dobrodosli u administratorski rezim -----------------");
+				"-----------------Dobrodosli u administratorski rezim -----------------");
 		poruka.put("admin.meni",
-				"Izaberite jednu od opcija unosom odgovarajuceg broja (1, 2, 3 ili 4): 1. izlistaj sve"
-						+ " korisnike; 2. izlistaj pozitivne korisnike; 3. izlistaj negativne korisnike; "
-						+ "4. izlistaj korisnike pod nadzorom.\n 5. Povratak u glavni meni");
-		poruka.put("admin.izlistavanjeSvi", "Lista svih korisnika:");
-		poruka.put("admin.izlistavanjePozitivni", "Lista svih pozitivnih korisnika:");
-		poruka.put("admin.izlistavanjeNegativni", "Lista svih negativnih korisnika:");
-		poruka.put("admin.izlistavanjeNadzor", "Lista svih korisnika pod nadzorom:");
+				"Izaberite jednu od opcija unosom odgovarajuceg broja (1, 2, 3 ili 4):\n1. izlistaj sve"
+						+ " korisnike; \n2. izlistaj  korisnike pozitivne na brzom testu; \n3. izlistaj korisnike negativne na brzom testu; "
+						+ "\n4. izlistaj korisnike pozitivne na PCR testu.\n5. Izlistaj korisnike negarivne na PCR testu\n6. Izlistak korisnike pod nadzorom\n0. Povratak u prethodni meni");
+		poruka.put("admin.izvestajSviKorisnici", "Lista svih korisnika:");
+		poruka.put("admin.izvestajPCRPozitivni", "Lista korisnika pozitivnih na PCR testiranju:");
+		poruka.put("admin.izvestajPCRNegativni", "Lista korisnika negativnih na PCR testiranju:");
+		poruka.put("admin.izvestajBrziPozitivni", "Lista korisnika pozitivnih na brzom testiranju:");
+		poruka.put("admin.izvestajBrziNegativni", "korisnika negativnih na brzom testiranju:");
+		poruka.put("admin.izvestajPodNadzorom", "Lista korisnika pod nadzorom:");
 		
 //		glavni meni na poscetku
 		poruka.put("glavniMeni",
