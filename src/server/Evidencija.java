@@ -334,4 +334,16 @@ public class Evidencija {
         }
         return false;
     }
+
+    public String podNadzoromTajmaut() {
+        String rez = ">>>----<<<\nLista korisnika pod nadzorom kojima je isteklo vreme za ponovno testiranje:\n";
+        List<Test> listaTestiranja = prebaciFajlUListuTestova();
+        for (Test t :
+                listaTestiranja) {
+            LocalDateTime danas = LocalDateTime.now();
+            LocalDateTime vremeTestiranja = LocalDateTime.ofInstant(t.getDatumTestiranja().toInstant(), ZoneId.systemDefault());
+            if (danas.getDayOfYear() - vremeTestiranja.getDayOfYear() > 2 && t.getRezultatTesta() == StatusKorisnika.POD_NADZOROM) rez += t.getKorisnik().toString();
+        }
+        return rez + ">>>----<<<";
+    }
 }

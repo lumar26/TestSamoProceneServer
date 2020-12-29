@@ -65,13 +65,15 @@ public class Util {
 		poruka.put("samoprocena.pitanje5", "Da li osećate opštu slabost?\n");
 		poruka.put("samoprocena.pitanje6", "Da li imate gubitak čula mirisa?\n");
 		poruka.put("samoprocena.pitanje7", "Da li imate gubitak/promenu čula ukusa?\n");
-
+		poruka.put("samoprocena.podNadzorom", "Ne možete raditi brzi/PCR test jer nemate dovoljno potvrdnih odgovora. Ubuduće ćete biti pod nadzorom, potrebno je da se unarednih 2 dana ponovo testirate...\n");
 		poruka.put("samoprocena.meniNakonPitanja",
 				"Izaberite sledeću akciju unosom odgovarajućeg rednog broja:\n" + "1. Započnite brzi test\n"
 						+ "2. Započnite PCR testiranje\n" + "3. Odradite oba testiranja\n"
 						+ "4. Vratite se u prethodni meni");
 
 //		admin mode
+		poruka.put("admin.prijava", "Molimo vas da unesete šifru administratora:");
+		poruka.put("admin.pogresnaLozinka", "Uneli ste pogrešnu šifru, povratak u glavni meni...");
 		poruka.put("admin.uvod",
 				"-----------------Dobrodosli u administratorski rezim -----------------");
 		poruka.put("admin.meni",

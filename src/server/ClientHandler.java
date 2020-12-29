@@ -21,6 +21,8 @@ public class ClientHandler extends Thread {
         komunikacioniSoket = s;
     }
 
+    //    metode koje olaksavaju citljivosrt i cija je uloga komunikacija preko komunikacionog soketa
+//    -------------------------------------------------------------------------------------------
     private void posaljiPoruku(String string) {
         String poruka = util.getPoruka().get(string);
         tokKaKlijentu.println(poruka);
@@ -32,23 +34,24 @@ public class ClientHandler extends Thread {
 
     private String primiPoruku() throws IOException {
         String rez = unosKlijenta.readLine();
-        if(rez.equals("*quit*")) throw new PrekidRadaException("Korisnik je odlucio da izađe iy aplikacije");
+        if (rez.equals("*quit*")) throw new PrekidRadaException("Korisnik je odlucio da izađe iy aplikacije");
         return rez;
     }
 
+    //  metoda pita korisnika da unese odgovor sve dok ne prosledi neprazan unos
     private String unesiKredencijal(String upit) throws IOException, PrekidRadaException {
         String odgovor;
         do {
             posaljiPoruku(upit);
-//			mozda bi za ovo trebalo odmah ovde da se odradi try catch
             odgovor = primiPoruku();
         } while (odgovor == null || odgovor.equals(""));
         return odgovor.trim();
     }
+    //    -------------------------------------------------------------------------------------------
 
+    //    registracija korisnika i njegov unos 'bazu'
     public Korisnik registrujKorisnika() throws IOException, PrekidRadaException {
 
-//		posaljiPoruku("----------------------------------\nForma za registraciju\n--------------------------");
         username = unesiKredencijal("registracija.username");
         password = unesiKredencijal("registracija.password");
         ime = unesiKredencijal("registracija.ime");
@@ -62,7 +65,7 @@ public class ClientHandler extends Thread {
             System.out.println("Uspesno je dodat novi korisnik u fajl");
             return novi;
         }
-        System.out.println("[ERROR EVIDENCIJA + CLIENTHENDLER] Korisnik novi nije dodat u fajl");
+        System.out.println("[ERROR]: Korisnik novi nije dodat u fajl");
         return null;
 
     }
@@ -83,21 +86,82 @@ public class ClientHandler extends Thread {
                 case "1":
                     break;
                 case "2":
-//				ovaj kejs me zeza jer mi izbacuje korisnika iz aplikacije skroz, umesto da ga vrati u glavni meni
-//                    privremeno resenje
+//                    kad korisnik odluci da se vrati u prethodni meni
                     korisnikHoceIzlaz = true;
                     break;
                 default:
                     break;
             }
             if (korisnikHoceIzlaz) {
-                System.out.println("Korisni je izabrao da izadje iz dela za prijavljivanje");
+                System.out.println("Korisni je izabrao da izadje iz forme za prijavu");
                 break;
             }
         }
         return null;
     }
 
+
+    public void obradiAdministratora(PrintStream tokKaKlijentu, BufferedReader unosKlijenta)
+            throws NumberFormatException, IOException, NullPointerException, PrekidRadaException {
+//        simulacija prijavljivanja administratora:
+        posaljiPoruku("admin.prijava");
+        if (!primiPoruku().equals("admin123")) {
+            posaljiPoruku("admin.pogresnaLozinka");
+            return;
+        }
+
+//        ovde prikazujemo korisnike koji su pod nadzorom koji su trebali da se testiraju u međuvremenu
+        posaljiIzvestaj(Evidencija.getInstance().podNadzoromTajmaut());
+        posaljiPoruku("admin.uvod");
+        int izbor;
+//		Korisnik moze da prekine komunikaciju nasilno ili unosom '*quit*'
+        while (true) {
+            posaljiPoruku("admin.meni");
+
+//			treba oni korisnici koji su pod nadzorom pa treba da rade ponovo
+            String unos = unosKlijenta.readLine().trim();
+//			na osnovu izbora izlistavamo sta korisnik zeli
+            switch (unos) {
+                case "1":
+                    posaljiPoruku("admin.izvestajSviKorisnici");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.SVI));
+                    break;
+                case "2":
+                    posaljiPoruku("admin.izvestajBrziPozitivni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POZITIVAN));
+                    break;
+                case "3":
+                    posaljiPoruku("admin.izvestajBrziNegativni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.NEGATIVAN));
+                    break;
+                case "4":
+                    posaljiPoruku("admin.izvestajPCRPozitivni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_POZITIVAN));
+                    break;
+                case "5":
+                    posaljiPoruku("admin.izvestajPCRNegativni");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_NEGATIVAN));
+                    break;
+                case "6":
+                    posaljiPoruku("admin.izvestajPodNadzorom");
+                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POD_NADZOROM));
+                    break;
+                case "7":
+                    posaljiPoruku("admin.izvestajStatistika");
+                    posaljiIzvestaj(Evidencija.getInstance().prikaziStatistiku());
+                    break;
+                case "0":
+                    return;
+                default:
+                    break;
+            }
+        }
+
+    }
+//  -----------------------------------------------------------------------------
+
+    //    testiranja korisnika
+//    ---------------------------------------------------------------------------
     public int samoproceni(String upit) throws IOException, PrekidRadaException {
 
         String odgovor;
@@ -164,8 +228,8 @@ public class ClientHandler extends Thread {
 
     }
 
+    //    testiranje sa postavljanjem pitanja, pa nakon toga i ostalo
     public void testirajKorisnika(Korisnik korisnik) throws IOException, NullPointerException, PrekidRadaException {
-
 
 
         while (true) {
@@ -175,7 +239,7 @@ public class ClientHandler extends Thread {
 
             switch (akcija) {
                 case "1":
-                    if(Evidencija.getInstance().jeTestiranDanas(korisnik)){
+                    if (Evidencija.getInstance().jeTestiranDanas(korisnik)) {
                         posaljiPoruku("upozorenje.jedanTestDnevno");
                         break;
                     }
@@ -190,9 +254,10 @@ public class ClientHandler extends Thread {
                     brojacPotvrdnihOdgovora += samoproceni("samoprocena.pitanje6");
                     brojacPotvrdnihOdgovora += samoproceni("samoprocena.pitanje7");
 
-                    posaljiPoruku("samoprocena.meniNakonPitanja");
-                    String izbor = primiPoruku().trim();
-                    if (brojacPotvrdnihOdgovora >= 2)
+
+                    if (brojacPotvrdnihOdgovora >= 2) {
+                        posaljiPoruku("samoprocena.meniNakonPitanja");
+                        String izbor = primiPoruku().trim();
                         switch (izbor) {
                             case "1":
                                 if (!Evidencija.getInstance().jeVecTestiran(korisnik, TestTip.BRZI))
@@ -211,16 +276,16 @@ public class ClientHandler extends Thread {
                             default:
                                 break;
                         }
-                    else {
+                    } else {
 //					korisnik nije imao dovoljno potvrdnih odgovora
                         Evidencija.getInstance().zameniStatusKorisnika(korisnik, StatusKorisnika.POD_NADZOROM);
+                        posaljiPoruku("samoprocena.podNadzorom");
                     }
                     break;
                 case "2":
 //				prikaz korisniku njegovog poslednje testiranja
                     posaljiIzvestaj(Evidencija.getInstance().poslednjeTestiranje(korisnik));
-
-                    break;
+                    return;
                 case "3":
                     return;
                 default:
@@ -228,55 +293,7 @@ public class ClientHandler extends Thread {
             }
         }
     }
-
-    public void obradiAdministratora(PrintStream tokKaKlijentu, BufferedReader unosKlijenta)
-            throws NumberFormatException, IOException, NullPointerException, PrekidRadaException {
-        posaljiPoruku("admin.uvod");
-        int izbor;
-//		Korisnik moze da prekine komunikaciju nasilno ili unosom '*quit*'
-        while (true) {
-            posaljiPoruku("admin.meni");
-
-//			treba oni korisnici koji su pod nadzorom pa treba da rade ponovo
-            String unos = unosKlijenta.readLine().trim();
-//			na osnovu izbora izlistavamo sta korisnik zeli
-            switch (unos) {
-                case "1":
-                    posaljiPoruku("admin.izvestajSviKorisnici");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.SVI));
-                    break;
-                case "2":
-                    posaljiPoruku("admin.izvestajBrziPozitivni");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POZITIVAN));
-                    break;
-                case "3":
-                    posaljiPoruku("admin.izvestajBrziNegativni");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.NEGATIVAN));
-                    break;
-                case "4":
-                    posaljiPoruku("admin.izvestajPCRPozitivni");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_POZITIVAN));
-                    break;
-                case "5":
-                    posaljiPoruku("admin.izvestajPCRNegativni");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.PCR_NEGATIVAN));
-                    break;
-                case "6":
-                    posaljiPoruku("admin.izvestajPodNadzorom");
-                    posaljiIzvestaj(Evidencija.getInstance().izlistajKorisnikeNaOsnovuStatusa(StatusKorisnika.POD_NADZOROM));
-                    break;
-                case "7":
-                    posaljiPoruku("admin.izvestajStatistika");
-                    posaljiIzvestaj(Evidencija.getInstance().prikaziStatistiku());
-                    break;
-                case "0":
-                    return;
-                default:
-                    break;
-            }
-        }
-
-    }
+//    -------------------------------------------------------------------------------------------------------
 
     @Override
     public void run() {
@@ -289,27 +306,22 @@ public class ClientHandler extends Thread {
                 String izbor = primiPoruku();
 
                 switch (izbor) {
-                    case "1":
+                    case "1": //registrovanje korisnika
                         Korisnik noviKorisnik = registrujKorisnika();
-                        posaljiPoruku("registracija.uspesna");
-
+                        if (noviKorisnik != null)
+                            posaljiPoruku("registracija.uspesna");
                         break;
-                    case "2":
+                    case "2": //korisnik je odabrao da se prijavi
                         posaljiPoruku("prijava.uvod");
-
                         Korisnik prijavljeniKorisnik = prijaviKorisnika();
 //	korisnik je prijavljen dakle ima ga u bazi podataka, sad se pristupa pitanjima i testiranju
 //					ako je hteo da se prijavi a nije registrovan vratice se null za prijavljeniKorisnik, pa mu se ponovo otvara glavni meni
                         if (prijavljeniKorisnik != null)
                             testirajKorisnika(prijavljeniKorisnik);
-
                         break;
-                    case "3":
+                    case "3": //korisnik je odabrao administratorski rezim
                         obradiAdministratora(tokKaKlijentu, unosKlijenta);
                         break;
-                    case "*quit*":
-                        komunikacioniSoket.close();
-                        return;
                     default:
                         break;
                 }
@@ -318,11 +330,9 @@ public class ClientHandler extends Thread {
         } catch (IOException e) {
             System.err.println("Doslo je do problema pri uspostavljanju toka podataka ka klijentu");
             return;
-        }
-        catch (NullPointerException npe) {
+        } catch (NullPointerException npe) {
             System.err.println("Korisnik je nasilno prekinuo aplikaciju");
-        }
-        catch (PrekidRadaException e){
+        } catch (PrekidRadaException e) {
             System.out.println(e.getMessage());
             posaljiPoruku("klijent.prekid");
         }
